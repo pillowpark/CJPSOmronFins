@@ -1,0 +1,14 @@
+LIBRARY
+
+
+
+EXPORTS
+	CJPSOFinsOpen				@1001
+	CJPSOFinsClose				@1051
+
+	CJPSOFinsConnect			@1201
+	CJPSOFinsDisconnect			@1202
+
+	CJPSOFinsMemRead			@1301
+	CJPSOFinsMemWrite			@1302
+
