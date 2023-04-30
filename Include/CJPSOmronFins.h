@@ -13,7 +13,7 @@ extern "C" {
 
 
 
-	
+	//2023.04.26 TEST
 
 	
 
@@ -37,6 +37,11 @@ extern "C" {
 	// 라이브리리 클로즈
 	UINT32 WINAPI CJPSOFinsClose(UINT32 uDeviceID);
 	//객체삭제, 리소스 정리
+
+	// 상태 확인
+	//객체 상태 확인(접속상태 획인)
+	UINT32 WINAPI CJPSOFinsStatus(UINT32 uDeviceID);
+	
 
 	// PLC에 접속 후
 	//노드번호 받아오는것까지 진행

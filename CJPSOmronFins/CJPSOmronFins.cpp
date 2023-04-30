@@ -181,3 +181,15 @@ UINT32 WINAPI CJPSOFinsMemWrite(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLen
 
 	return uResult;
 }
+
+
+// 상태 확인
+//객체 상태 확인(접속상태 획인)
+UINT32 WINAPI CJPSOFinsStatus(UINT32 uDeviceID)
+{
+	CSF_CON_STATUS uResult;
+
+	uResult = COFCS_UnKnown;
+
+	return uResult;
+}

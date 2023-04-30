@@ -153,31 +153,31 @@ void FinsLibDynamicLoadTest()
         _index++;
         //쓰기
         //OFinsMemWrite(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pWriteBuff, PINT32 pnLength);
-        if (OFinsMemWrite != NULL)
-        {
-            //uRetVall = OFinsMemWrite(uDeviceID, uStart, uWordLength, wWriteBuff, &nRetLength);
-            wWriteBuff[0] = ((_index) & 0x0000FFFF);
-            wWriteBuff[1] = ((_index >> 16) & 0x0000FFFF);
-            wWriteBuff[2] = 0;
-            wWriteBuff[3] = 0;
-            wWriteBuff[4] = 0;
-            wWriteBuff[5] = 0;
+        //if (OFinsMemWrite != NULL)
+        //{
+        //    //uRetVall = OFinsMemWrite(uDeviceID, uStart, uWordLength, wWriteBuff, &nRetLength);
+        //    wWriteBuff[0] = ((_index) & 0x0000FFFF);
+        //    wWriteBuff[1] = ((_index >> 16) & 0x0000FFFF);
+        //    wWriteBuff[2] = 0;
+        //    wWriteBuff[3] = 0;
+        //    wWriteBuff[4] = 0;
+        //    wWriteBuff[5] = 0;
 
-            uTemp32 = 0x12345678;
-            memcpy(&wWriteBuff[2], &uTemp32, 4);
+        //    uTemp32 = 0x12345678;
+        //    memcpy(&wWriteBuff[2], &uTemp32, 4);
 
-            uTemp32 = _index++;
-            //EndianSwap(&uTemp32);
-            memcpy(&wWriteBuff[4], &uTemp32, 4);
+        //    uTemp32 = _index++;
+        //    //EndianSwap(&uTemp32);
+        //    memcpy(&wWriteBuff[4], &uTemp32, 4);
 
-            uStart = 0;
-            uWordLength = 16;
-            memset(wReadBuff, 0, 100);
-            printf("[DEBUG][APP] OFinsMemWrite( ID = %d ) call \n", uDeviceID);
-            uRetVall = OFinsMemWrite(uDeviceID, uStart, uWordLength, wWriteBuff, &nRetLength);
-            printf("[DEBUG][APP] %d = OFinsMemWrite(start = %d, size =%d ) return \n", uRetVall, uStart, uWordLength);
+        //    uStart = 0;
+        //    uWordLength = 16;
+        //    memset(wReadBuff, 0, 100);
+        //    printf("[DEBUG][APP] OFinsMemWrite( ID = %d ) call \n", uDeviceID);
+        //    uRetVall = OFinsMemWrite(uDeviceID, uStart, uWordLength, wWriteBuff, &nRetLength);
+        //    printf("[DEBUG][APP] %d = OFinsMemWrite(start = %d, size =%d ) return \n", uRetVall, uStart, uWordLength);
 
-        }
+        //}
 
         Sleep(1000);
 
