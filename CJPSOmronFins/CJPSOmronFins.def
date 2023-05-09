@@ -6,6 +6,9 @@ EXPORTS
 	CJPSOFinsOpen				@1001
 	CJPSOFinsClose				@1051
 
+	CJPSOFinsSetNodeInfo		@1101
+	CJPSOFinsGetNodeInfo		@1102
+
 	CJPSOFinsConnect			@1201
 	CJPSOFinsDisconnect			@1202
 

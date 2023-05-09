@@ -43,7 +43,7 @@ UINT32 WINAPI CJPSOFinsOpen(UINT32 uDeviceType, UINT32 uIPAddress, UINT32 uPortN
 	UINT32 uResult = 0;
 
 	//uResult = g_DeviceFactory.AddFinsDevice(uIPAddress, puDeviceID);
-	uResult = g_DeviceFactory.AddFinsDevice(uDeviceType, uIPAddress, puDeviceID);
+	uResult = g_DeviceFactory.AddFinsDevice(uDeviceType, uIPAddress, (UINT16)uPortNum, puDeviceID);
 
 
 	if (uResult == COFR_Ok)
@@ -88,11 +88,13 @@ UINT32 WINAPI CJPSOFinsConnect(UINT32 uDeviceID)
 	UINT32 uResult = 0;
 	PCFinsDevice pFinsDevice;
 	INT32 nErrorCode;
-
+	
 	pFinsDevice = g_DeviceFactory.GetFinsDevice(uDeviceID);
+	//
+	
 	if (pFinsDevice)
-	{
-		uResult = pFinsDevice->Connect();
+	{		
+		uResult = pFinsDevice->Connect();		
 	}
 	else
 	{
@@ -102,7 +104,8 @@ UINT32 WINAPI CJPSOFinsConnect(UINT32 uDeviceID)
 	DebugPrint(_T("[DebugPrint] CJPSOFinsConnect(%d)::Connect() return = %d\n", uDeviceID, uResult));
 
 	if (uResult == COFR_Ok)
-	{
+	{			
+
 		pFinsDevice->GetNodeAddress(&nErrorCode);
 
 		if (nErrorCode != 0)
@@ -112,7 +115,8 @@ UINT32 WINAPI CJPSOFinsConnect(UINT32 uDeviceID)
 
 			//for debug
 			DebugPrint(_T("[DebugPring] CJPSOFinsDisconnect(%d) call..\n"), uDeviceID);
-		}
+		}	
+
 	}
 	return uResult;
 
@@ -182,6 +186,60 @@ UINT32 WINAPI CJPSOFinsMemWrite(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLen
 	return uResult;
 }
 
+//2023.05.09 Add
+//Hostlink Header 셋팅
+UINT32 WINAPI CJPSOFinsSetNodeInfo(UINT32 uDeviceID, INT32 nBlockArea,
+	INT32 nDestNetworkAddr, INT32 nDestNodeNum, INT32 nDestUnitAddr,
+	INT32 nSourceNetworkAddr, INT32 nSourceNodeNum, INT32 nSourceUnitAddr)
+{
+	
+		//for debug
+		DebugPrint(_T("[DebugPring] CJPSOFinsSetNodeInfo(%d) call..\n"), uDeviceID);
+
+		UINT32 uResult = 0;
+		PCFinsDevice pFinsDevice;
+		UINT32 uFinsErrCode = 0;
+
+		pFinsDevice = g_DeviceFactory.GetFinsDevice(uDeviceID);
+		if (pFinsDevice)
+		{
+			uResult = pFinsDevice->SetFinsHeader( nBlockArea,
+				 nDestNetworkAddr,  nDestNodeNum,  nDestUnitAddr,
+				 nSourceNetworkAddr,  nSourceNodeNum,  nSourceUnitAddr);
+			//(UINT uAddress, INT nSize, PVOID pValue)
+		}
+		else
+			uResult = COFR_InvalidDevice;
+
+		return uResult;
+	
+}
+
+//Hostlink Header 확인
+UINT32 WINAPI CJPSOFinsGetNodeInfo(UINT32 uDeviceID, PINT32 nBlockArea,
+	PINT32 nDestNetworkAddr, PINT32 nDestNodeNum, PINT32 nDestUnitAddr,
+	PINT32 nSourceNetworkAddr, PINT32 nSourceNodeNum, PINT32 nSourceUnitAddr)
+{
+	//for debug
+	DebugPrint(_T("[DebugPring] CJPSOFinsGetNodeInfo(%d) call..\n"), uDeviceID);
+
+	UINT32 uResult = 0;
+	PCFinsDevice pFinsDevice;
+	UINT32 uFinsErrCode = 0;
+
+	pFinsDevice = g_DeviceFactory.GetFinsDevice(uDeviceID);
+	if (pFinsDevice)
+	{
+		uResult = pFinsDevice->GetFinsHeader(nBlockArea,
+			nDestNetworkAddr, nDestNodeNum, nDestUnitAddr,
+			nSourceNetworkAddr, nSourceNodeNum, nSourceUnitAddr);
+		//(UINT uAddress, INT nSize, PVOID pValue)
+	}
+	else
+		uResult = COFR_InvalidDevice;
+
+	return uResult;
+}
 
 // 상태 확인
 //객체 상태 확인(접속상태 획인)

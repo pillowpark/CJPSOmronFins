@@ -19,7 +19,9 @@ namespace OmronFinsViewerCS
         //NX102-1200 : 리틀엔디안, 통신할때 WORD 내에서는 빅엔디안으로 보내주는중 
 
         COFD_NX_PLC = 0x00002000,
-        COFD_CJ_PLC = 0x00003000
+        COFD_CJ_PLC = 0x00003000,
+        COFD_FINS_UDP = 0x00004000,
+        COFD_FINS_TCP = 0x00005000
 
 
     };
@@ -59,11 +61,11 @@ namespace OmronFinsViewerCS
     };
 
 
-    
+
     public class OEKFins
     {
 #if (_x64_)   // x64는 속성에서 조건부 컴파일 기호란에 추가
-    const string dllName = "CJPSOmronFins.dll";   // 64Bit 플랫폼일 때 활성화
+        const string dllName = "CJPSOmronFins.dll";   // 64Bit 플랫폼일 때 활성화
 #else
     const string dllName = "PowerPmac32.dll";   // 32Bit 플랫폼일 때 활성화
 #endif
@@ -107,13 +109,29 @@ namespace OmronFinsViewerCS
         //읽어오기
         [DllImport(dllName)]
         //UINT32 WINAPI CJPSOFinsMemRead(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pReadBuff, PINT32 pnLength);
-        public static extern UInt32 CJPSOFinsMemRead(UInt32 uDeviceID, UInt32 uAddress, Int32 nSize, 
+        public static extern UInt32 CJPSOFinsMemRead(UInt32 uDeviceID, UInt32 uAddress, Int32 nSize,
             Byte[] pValue, out UInt32 pnLength);
 
         //메모리에 쓰기
         [DllImport(dllName)]
         //UINT32 WINAPI CJPSOFinsMemWrite(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pWriteBuff, PINT32 pnLength);
-        public static extern UInt32 CJPSOFinsMemWrite(UInt32 uDeviceID, UInt32 uAddress, Int32 nSize, 
+        public static extern UInt32 CJPSOFinsMemWrite(UInt32 uDeviceID, UInt32 uAddress, Int32 nSize,
             Byte[] pValue, out UInt32 pnLength);
+
+
+        //2023.05.09 Add
+        //Hostlink Header 셋팅
+        [DllImport(dllName)]
+        public static extern UInt32 CJPSOFinsSetNodeInfo(UInt32 uDeviceID, Int32 nBlockArea,
+            Int32 nDestNetworkAddr, Int32 nDestNodeNum, Int32 nDestUnitAddr,
+            Int32 nSourceNetworkAddr, Int32 nSourceNodeNum, Int32 nSourceUnitAddr);
+
+
+        //Hostlink Header 확인
+        [DllImport(dllName)]
+        public static extern UInt32 CJPSOFinsGetNodeInfo(UInt32 uDeviceID, out Int32 nBlockArea,
+            out Int32 nDestNetworkAddr, out Int32 nDestNodeNum, out Int32 nDestUnitAddr,
+            out Int32 nSourceNetworkAddr, out Int32 nSourceNodeNum, out Int32 nSourceUnitAddr);
     }
+
 }

@@ -13,18 +13,10 @@ extern "C" {
 
 
 
-	//2023.04.26 TEST
+	
 
 	
 
-	//CJPSOFinsSetNodeInfo(unit DeviceID, class FinsHeader);
-	//Hostlink Header 셋팅
-
-	//CJPSOFinsGetNodeInfo(unit DeviceID, class FinsHeader);
-	//Hostlink Header 확인
-	
-
-		
 		
 
 	// 라이브러리 오픈
@@ -56,6 +48,18 @@ extern "C" {
 	//메모리에 쓰기
 	UINT32 WINAPI CJPSOFinsMemWrite(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pWriteBuff, PINT32 pnLength);
 
+	//2023.05.09 Add
+	//Hostlink Header 셋팅
+	UINT32 WINAPI CJPSOFinsSetNodeInfo(UINT32 uDeviceID, INT32 nBlockArea, 
+		INT32 nDestNetworkAddr, INT32 nDestNodeNum, INT32 nDestUnitAddr,
+		INT32 nSourceNetworkAddr, INT32 nSourceNodeNum, INT32 nSourceUnitAddr );
+	
+
+	//Hostlink Header 확인
+	UINT32 WINAPI CJPSOFinsGetNodeInfo(UINT32 uDeviceID, PINT32 nBlockArea,
+		PINT32 nDestNetworkAddr, PINT32 nDestNodeNum, PINT32 nDestUnitAddr,
+		PINT32 nSourceNetworkAddr, PINT32 nSourceNodeNum, PINT32 nSourceUnitAddr);
+	
 
 #ifdef UNICODE
 //#define OSGetResponse			OSGetResponseW

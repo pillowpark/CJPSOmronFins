@@ -139,21 +139,21 @@ typedef struct tagFinsWriteMemResponse
 	//x64를 생각해서 8바이트 단위로 끊을것
 
 }FINS_WRITE_RESPONSE_PACKET;
-int main()
-{
-    std::cout << "Hello World!\n";
-
-	//for debug
-	printf("\n FINS_READ_REQ_PACKET sizeof( ) = %d \n", sizeof(FINS_READ_REQ_PACKET));
-	//
-	printf("\n FINS_READ_RESPONSE_PACKET sizeof( ) = %d \n", sizeof(FINS_READ_RESPONSE_PACKET));
-	//
-	printf("\n FINS_WRITE_REQ_PACKET sizeof( ) = %d \n", sizeof(FINS_WRITE_REQ_PACKET));
-	//
-	printf("\n FINS_WRITE_RESPONSE_PACKET sizeof( ) = %d \n", sizeof(FINS_WRITE_RESPONSE_PACKET));
-
-	printf("\n sizeof ( byte2_t ) = %d \n", sizeof(byte2_t) );
-}
+//int main()
+//{
+//    std::cout << "Hello World!\n";
+//
+//	//for debug
+//	printf("\n FINS_READ_REQ_PACKET sizeof( ) = %d \n", sizeof(FINS_READ_REQ_PACKET));
+//	//
+//	printf("\n FINS_READ_RESPONSE_PACKET sizeof( ) = %d \n", sizeof(FINS_READ_RESPONSE_PACKET));
+//	//
+//	printf("\n FINS_WRITE_REQ_PACKET sizeof( ) = %d \n", sizeof(FINS_WRITE_REQ_PACKET));
+//	//
+//	printf("\n FINS_WRITE_RESPONSE_PACKET sizeof( ) = %d \n", sizeof(FINS_WRITE_RESPONSE_PACKET));
+//
+//	printf("\n sizeof ( byte2_t ) = %d \n", sizeof(byte2_t) );
+//}
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
 // 프로그램 디버그: <F5> 키 또는 [디버그] > [디버깅 시작] 메뉴
@@ -167,7 +167,92 @@ int main()
 //   6. 나중에 이 프로젝트를 다시 열려면 [파일] > [열기] > [프로젝트]로 이동하고 .sln 파일을 선택합니다.
 
 
+//자기 자신 IP 얻어 오기
+//디폴트 IPv4 주소 얻어오기
+#include <WinSock2.h>
+#include <Windows.h>
+#include <stdio.h>
+#include <ws2tcpip.h>
 
+#pragma comment(lib,"ws2_32")
+IN_ADDR GetDefaultMyIP();
+int main()
+{
+	WSADATA wsadata;
+	WSAStartup(MAKEWORD(2, 2), &wsadata);
+	IN_ADDR addr;
+
+	char client_ip[20] = { 0, };
+	PCSTR pstr;
+
+	addr = GetDefaultMyIP();//디폴트 IPv4 주소 얻어오기
+	//
+	pstr = inet_ntop(AF_INET, &addr.S_un.S_addr, client_ip, sizeof(client_ip));
+	if(pstr == NULL)
+		printf("inet_ntop() fail\n");//IPv4 주소를 문자열로 출력
+	else
+		printf("%s\n", client_ip);//IPv4 주소를 문자열로 출력
+
+	WSACleanup();
+	return 0;
+}
+
+IN_ADDR GetDefaultMyIP()
+{
+	char localhostname[MAX_PATH];
+	IN_ADDR addr = { 0, };
+
+	if (gethostname(localhostname, MAX_PATH) == SOCKET_ERROR)//호스트 이름 얻어오기
+	{
+		return addr;
+	}
+
+	addrinfo addrHint = { 0, };
+	addrHint.ai_socktype = SOCK_STREAM;
+	addrHint.ai_protocol = IPPROTO_TCP;
+	addrHint.ai_family = AF_INET;
+	//
+	addrinfo* pAddrInfo = nullptr;
+	addrinfo* pAddrInfo_prev = nullptr;
+	addrinfo* pAddrInfo_next = nullptr;
+	//char nodeName[32] = "brunch.co.kr";
+	char serviceName[6] = "http";
+	int res = getaddrinfo(localhostname, serviceName, &addrHint, &pAddrInfo);
+	std::string ip;
+	if (res == 0)
+	{
+		inet_ntop(AF_INET, &pAddrInfo->ai_addr->sa_data[2], &ip[0], 16);
+		printf("%s\n", ip.c_str());//IPv4 주소를 문자열로 출력
+		pAddrInfo_prev = pAddrInfo;
+		 
+		while (pAddrInfo_prev->ai_next != nullptr)
+		{
+			pAddrInfo_next = pAddrInfo_prev->ai_next;
+			inet_ntop(AF_INET, &pAddrInfo_next->ai_addr->sa_data[2], &ip[0], 16);
+			printf("%s\n", ip.c_str());//IPv4 주소를 문자열로 출력
+			pAddrInfo_prev = pAddrInfo_next;
+		}
+	}
+	else {
+		std::cout << "gethostbyname error:" << gai_strerror(res);
+	}
+	if (pAddrInfo != nullptr)
+	{
+		freeaddrinfo(pAddrInfo);
+	}
+
+	//HOSTENT* ptr = gethostbyname2(localhostname, AF_INET);//호스트 엔트리 얻어오기
+	//while (ptr && ptr->h_name)
+	//{
+	//	if (ptr->h_addrtype == PF_INET)//IPv4 주소 타입일 때
+	//	{
+	//		memcpy(&addr, ptr->h_addr_list[0], ptr->h_length);//메모리 복사
+	//		break;//반복문 탈출
+	//	}
+	//	ptr++;
+	//}
+	return addr;
+}
 
 //PLC Errors for Omron FINS Series CS and CJ
 //Error Message   Description

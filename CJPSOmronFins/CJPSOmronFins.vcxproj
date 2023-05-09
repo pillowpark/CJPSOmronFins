@@ -147,12 +147,14 @@
     <ClInclude Include="..\Include\CJPSOmronFinsDef.h" />
     <ClInclude Include="CDeviceFactory.h" />
     <ClInclude Include="CFinsDevice.h" />
+    <ClInclude Include="CFinsUDPDevice.h" />
     <ClInclude Include="CommonSupport.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CFinsDevice.cpp" />
+    <ClCompile Include="CFinsUDPDevice.cpp" />
     <ClCompile Include="CJPSOmronFins.cpp" />
     <ClCompile Include="CommonSupport.cpp" />
     <ClCompile Include="dllmain.cpp" />

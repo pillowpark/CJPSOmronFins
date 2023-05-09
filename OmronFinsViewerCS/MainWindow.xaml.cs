@@ -23,6 +23,7 @@ using System.Net;
 using System.Diagnostics;
 
 using OmronFinsViewerCS.Device;
+using static OmronFinsViewerCS.Device.FinsDevice;
 
 namespace OmronFinsViewerCS
 {
@@ -34,6 +35,7 @@ namespace OmronFinsViewerCS
 
         ReadPage mReadPage;
         WritePage mWritePage;
+        LoadingPage mLoadingPage;
         //
         private DataManager mDataManager;// = App.GetApp().GetDataManager();
         private FinsDevice mFinsDevice;// = dataManager.GetPmacDevice();
@@ -57,10 +59,11 @@ namespace OmronFinsViewerCS
             CenterRightFrame.Content = mWritePage;
 
             //
-           
-           
+            mLoadingPage = new LoadingPage();
+            CenterLoadingFrame.Content = mLoadingPage;
+            mLoadingPage.Visibility = Visibility.Hidden;
 
-            mDataManager = App.GetApp().GetDataManager();
+              mDataManager = App.GetApp().GetDataManager();
             mFinsDevice = mDataManager.GetFinsDevice();
             mDeviceDataTask = App.GetApp().GetDeviceDataTask();
         }
@@ -98,18 +101,39 @@ namespace OmronFinsViewerCS
 
         private void x_ButtonConnect_Click(object sender, RoutedEventArgs e)
         {
-            
-            UInt32 uIPAddress = 0xC0A800DD;//192.168.0.221
-                                    //uIPAddress = 0xC0A8FA01;//192.168.250.1
-                                    //uIPAddress = 0xC0A8FB01;//192.168.251.1
-            UInt32 uPortNum = 9600;
-            mFinsDevice.Open("192.168.0.221", uPortNum);
-           // mFinsDevice.Open("10.0.0.10", uPortNum);
 
-            mFinsDevice.Connect();
+            //UInt32 uIPAddress = 0xC0A800DD;//192.168.0.221
+            //uIPAddress = 0xC0A8FA01;//192.168.250.1
+            //uIPAddress = 0xC0A8FB01;//192.168.251.1
+            String strIPAddr;
+            UInt32 uPortNum = 9600;
+            Int32 nTCPUDPSel;
+            Int32 nFinsBlockArea;
+            FinsHeaderT _hotlink_header = new FinsHeaderT(
+                    mDataManager.m_nOmronFinsDNA, mDataManager.m_nOmronFinsDA1, mDataManager.m_nOmronFinsDA2,
+                    mDataManager.m_nOmronFinsSNA, mDataManager.m_nOmronFinsSA1, mDataManager.m_nOmronFinsSA2);
+
+            strIPAddr   = mDataManager.m_strOmronPlcIP;// = "192.168.0.221"
+            uPortNum    = (uint)mDataManager.m_nOmronFinsPort;//
+            nTCPUDPSel  = mDataManager.m_nOmronFinsTCPUDPSel;// = 1; //1: TCP, 2:UDP
+            nFinsBlockArea = mDataManager.m_nOmronFinsAreaBlock;//= 0x82; //0x82 : DM영역
+            
+            //1: TCP, 2:UDP
+            if (nTCPUDPSel == 1)
+            {
+                mFinsDevice.Open(strIPAddr, uPortNum, (UInt32)CJPSOF_DEVICE_TYPE.COFD_FINS_TCP);
+                // mFinsDevice.Open("10.0.0.10", uPortNum);
+                mFinsDevice.Connect();
+            } 
+            else
+            {
+                mFinsDevice.Open(strIPAddr, uPortNum, (UInt32)CJPSOF_DEVICE_TYPE.COFD_FINS_UDP);
+                // mFinsDevice.Open("10.0.0.10", uPortNum);
+                mFinsDevice.Connect();
+                mFinsDevice.SetFinsHeader(_hotlink_header, nFinsBlockArea);
             //OFinsOpen(UINT32 uDeviceType, UINT32 uIPAddress, UINT32 uPortNum);
 
-            //
+            }
         }
 
         private void x_ButtonDisconnect_Click(object sender, RoutedEventArgs e)

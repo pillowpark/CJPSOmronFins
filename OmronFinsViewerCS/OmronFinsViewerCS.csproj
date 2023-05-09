@@ -76,17 +76,27 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WpfAnimatedGif, Version=2.0.0.0, Culture=neutral, PublicKeyToken=9e7cd3b544a090dc, processorArchitecture=MSIL">
+      <HintPath>..\packages\WpfAnimatedGif.2.0.2\lib\net40\WpfAnimatedGif.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="Data\CJogMoveData.cs" />
     <Compile Include="Data\DataManager.cs" />
     <Compile Include="Data\Ini.cs" />
     <Compile Include="Data\PlcFinsData.cs" />
     <Compile Include="Device\FinsDevice.cs" />
     <Compile Include="Device\OEKFins.cs" />
+    <Compile Include="JoyStickWindow.xaml.cs">
+      <DependentUpon>JoyStickWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="LoadingPage.xaml.cs">
+      <DependentUpon>LoadingPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ReadPage.xaml.cs">
       <DependentUpon>ReadPage.xaml</DependentUpon>
     </Compile>
@@ -97,6 +107,14 @@
     <Compile Include="WritePage.xaml.cs">
       <DependentUpon>WritePage.xaml</DependentUpon>
     </Compile>
+    <Page Include="JoyStickWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LoadingPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -164,8 +182,17 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WpfControlLibraryJoyStick\WpfControlLibrary.csproj">
+      <Project>{b9108e89-207e-4e41-a0f9-8ad9143147b9}</Project>
+      <Name>WpfControlLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="please-wait.gif" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /D "$(SolutionDir)\x64\$(Configuration)\*.dll"  "$(ProjectDir)\bin\$(Configuration)"</PostBuildEvent>
+    <PostBuildEvent>copy "$(SolutionDir)x64\$(Configuration)\*.dll"  "$(ProjectDir)bin\$(Configuration)\"</PostBuildEvent>
   </PropertyGroup>
 </Project>

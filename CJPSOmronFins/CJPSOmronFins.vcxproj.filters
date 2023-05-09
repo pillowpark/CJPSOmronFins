@@ -48,6 +48,9 @@
     <ClInclude Include="..\Include\CJPSOmronFinsDef.h">
       <Filter>소스 파일\외부연결</Filter>
     </ClInclude>
+    <ClInclude Include="CFinsUDPDevice.h">
+      <Filter>소스 파일\통신장치</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CJPSOmronFins.cpp">
@@ -66,6 +69,9 @@
       <Filter>소스 파일\메인파일</Filter>
     </ClCompile>
     <ClCompile Include="CFinsDevice.cpp">
+      <Filter>소스 파일\통신장치</Filter>
+    </ClCompile>
+    <ClCompile Include="CFinsUDPDevice.cpp">
       <Filter>소스 파일\통신장치</Filter>
     </ClCompile>
   </ItemGroup>

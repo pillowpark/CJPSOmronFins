@@ -50,6 +50,9 @@ typedef struct _CJPSOF_FINS_HOST_LINK_HEADER
 	//Sequence Number( 00 ~ FF 까지 계속 증가 )
 	int sid; //(Source ID) - 재전송시 카운터로사용됨 “00”(00~FF 사이의 수 입력)
 
+	//
+	int memoryAreaCode; //Command Data 영역에 들어가는 Block 코드
+
 }_csofins_header_t;
 
 //fins node address request data 전송
@@ -68,8 +71,11 @@ typedef union convert_short_to_byte2 {
 	unsigned char	byte_val[2];
 }byte2_t;
 
+
+//---------------------------------------------
+//---------  for FINS TCP 통신
 //x64를 생각해서 8바이트 단위로 끊을것
-typedef struct tagFinsReadMemRequest
+typedef struct tagFinsTCPReadMemRequest
 {
 	unsigned char	prefix[4];		//FINS    4
 	byte4_t			data_size;		//0x001a  8
@@ -100,11 +106,11 @@ typedef struct tagFinsReadMemRequest
 	//
 
 
-}FINS_READ_REQ_PACKET;
+}FINSTCP_READ_REQ_PACKET;
 
 
 
-typedef struct tagFinsReadMemResponse
+typedef struct tagFinsTCPReadMemResponse
 {
 	unsigned char	prefix[4];		//FINS    4
 	byte4_t			data_size;		//0x001a  8
@@ -125,13 +131,13 @@ typedef struct tagFinsReadMemResponse
 	//
 	unsigned char	sequence;			// 26
 	unsigned char	fins_cmd_code[2];	// 27 28
-	unsigned char	data_area_type;		// 29
-	unsigned char	read_err_code;		// 30
+	//unsigned char	data_area_type;		// 
+	unsigned char	read_err_code[2];		//29 30
 	unsigned char	bData[1602];		// 31 ~ 1632
 
-}FINS_READ_RESPONSE_PACKET;
+}FINSTCP_READ_RESPONSE_PACKET;
 
-typedef struct tagFinsWriteMemRequest
+typedef struct tagFinsTCPWriteMemRequest
 {
 	unsigned char	prefix[4];		//FINS    4
 	byte4_t			frame_data_size;		//0x001a  8
@@ -160,10 +166,10 @@ typedef struct tagFinsWriteMemRequest
 	unsigned char bData[1606];          //35 ~ 1640 
 
 
-}FINS_WRITE_REQ_PACKET;
+}FINSTCP_WRITE_REQ_PACKET;
 
 
-typedef struct tagFinsWriteMemResponse
+typedef struct tagFinsTCPWriteMemResponse
 {
 	unsigned char	prefix[4];		//FINS    4
 	byte4_t			data_size;		//0x001a  8
@@ -190,19 +196,22 @@ typedef struct tagFinsWriteMemResponse
 	unsigned char _dummy[10];  //31,32,~~ 38,39,40
 	//x64를 생각해서 8바이트 단위로 끊을것
 
-}FINS_WRITE_RESPONSE_PACKET;
+}FINSTCP_WRITE_RESPONSE_PACKET;
+
 
 
 class CFinsDevice
 {
 public:
 	CFinsDevice();
-	CFinsDevice(UINT32 uIPAddress, UINT32 uDeviceID);
+	CFinsDevice(UINT32 uIPAddress, UINT16 uPortNumber, UINT32 uDeviceID);
 	virtual ~CFinsDevice();
 
 	virtual UINT32 GetIPAddress();
 	virtual UINT32 GetDeviceID();
 
+	//virtual UINT32 GetDeviceProtocol();
+	//
 	virtual UINT32 Connect();
 	virtual UINT32 Disconnect();
 	virtual UINT32 IsFinsConnected();
@@ -221,7 +230,15 @@ public:
 	virtual UINT32 FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT32* uFinsErrorCode);
 	virtual UINT32 FinsMemWrite(UINT uAddress, INT nSize, PVOID pValue, UINT32* uFinsErrorCode);
 	//
+			//2023.05.09 Add
+	virtual UINT32 SetFinsHeader(INT32 nBlockArea,
+		INT32 nDestNetworkAddr, INT32 nDestNodeNum, INT32 nDestUnitAddr,
+		INT32 nSourceNetworkAddr, INT32 nSourceNodeNum, INT32 nSourceUnitAddr);
+	//Hostlink Header 셋팅
 
+	virtual UINT32 GetFinsHeader(PINT32 nBlockArea,
+		PINT32 nDestNetworkAddr, PINT32 nDestNodeNum, PINT32 nDestUnitAddr,
+		PINT32 nSourceNetworkAddr, PINT32 nSourceNodeNum, PINT32 nSourceUnitAddr);
 
 protected:
 	BOOL DeviceDetect(UINT32 uIPAddress = 0);
@@ -237,23 +254,31 @@ protected:
 	UINT32 GetFinsErrorCode(PCHAR pszResponse, INT nLength);
 	UINT32 GetByteOrder();
 	//
+	_csofins_header_t			m_fins_header;
 
-
-protected:
 	UINT32	m_uDeviceID;
 	UINT32	m_uIPAddress;
+	UINT16	m_uPortNumber;
+	//
 	HANDLE	m_hMutex;
 
 	SOCKET m_socketPrimary;
 	UINT32 m_uByteOrder;
 
+private:
+	
 	//
-	_csofins_header_t			m_fins_header;
-	FINS_READ_REQ_PACKET		m_read_req_packet;
-	FINS_READ_RESPONSE_PACKET	m_read_res_packet;
-	FINS_WRITE_REQ_PACKET		m_write_req_packet;
-	FINS_WRITE_RESPONSE_PACKET	m_write_res_packet;
+	//UINT32 m_uDeviceType;
+	//
+	
+	FINSTCP_READ_REQ_PACKET		m_read_req_packet;
+	FINSTCP_READ_RESPONSE_PACKET	m_read_res_packet;
+	FINSTCP_WRITE_REQ_PACKET		m_write_req_packet;
+	FINSTCP_WRITE_RESPONSE_PACKET	m_write_res_packet;
 		
+	//
+	//for UDP
+	SOCKADDR m_plc_addr;
 };
 
 typedef CFinsDevice* PCFinsDevice;

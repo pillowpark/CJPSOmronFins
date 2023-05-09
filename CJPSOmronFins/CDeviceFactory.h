@@ -7,6 +7,7 @@
 #include "pch.h"
 
 #include "CFinsDevice.h"
+#include "CFinsUDPDevice.h"
 //#include "CAnalogIODevice.h"
 
 class CDeviceFactory
@@ -17,7 +18,7 @@ public:
 
 	//	UINT32 AddFinsDevice(UINT32 uIPAddress, PUINT32 puDeviceID);
 	//	UINT32 AddAnalogIODevice(UINT32 uIPAddress, PUINT32 puDeviceID);
-	UINT32 AddFinsDevice(UINT32 uDeviceType, UINT32 uIPAddress, PUINT32 puDeviceID);
+	UINT32 AddFinsDevice(UINT32 uDeviceType, UINT32 uIPAddress, UINT16 uPortNumber, PUINT32 puDeviceID);
 
 	UINT32 DeleteFinsDevice(UINT32 uDeviceID);
 

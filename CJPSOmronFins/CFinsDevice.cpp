@@ -15,17 +15,20 @@ CFinsDevice::CFinsDevice()
 	m_uDeviceID = 0;
 	m_socketPrimary = NULL;
 	m_hMutex = NULL;
+	//
 
 	//
 	GetByteOrder();
 	HostLinkHeaderSetting();
 }
 
-CFinsDevice::CFinsDevice(UINT32 uIPAddress, UINT32 uDeviceID)
+CFinsDevice::CFinsDevice(UINT32 uIPAddress, UINT16 uPortNumber, UINT32 uDeviceID)
 {
 	m_uIPAddress = uIPAddress;
 	m_uDeviceID = uDeviceID;
+	m_uPortNumber = uPortNumber;
 	m_socketPrimary = NULL;
+	//
 
 	//
 	GetByteOrder();
@@ -162,6 +165,8 @@ UINT32 CFinsDevice::GetFinsErrorCode(PCHAR pszResponse, INT nLength)
 	return uErrorCode;
 }
 
+
+
 UINT32 CFinsDevice::GetNodeAddress(PINT32 pnErrorCode)
 {
 	UINT32 uResult;
@@ -180,6 +185,9 @@ UINT32 CFinsDevice::GetNodeAddress(PINT32 pnErrorCode)
 	Lock();
 
 	uResult = COFR_Ok;
+
+
+
 	nCommandLength = 20;  //Fins Node Data Request Frame Size
 
 	nResponseLength = 24; //Fins Node Data Response Frame Size
@@ -278,7 +286,7 @@ UINT32 CFinsDevice::FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT32* 
 
 	//
 	// 테스트 해보고 바이트 오더 고려할것
-	uTempInt32 = m_read_req_packet.sequence++;
+	uTempInt32 = (m_read_req_packet.sequence + 1);
 	m_read_req_packet.sequence = (unsigned char)(uTempInt32 & 0x00FF);
 	//
 	uTemp16.uint16_val = htons((unsigned short)nSize);;
@@ -291,10 +299,11 @@ UINT32 CFinsDevice::FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT32* 
 	//
 
 	uResult = COFR_Ok;
-	nCommandLength	= 34;  //고정값, Fins Read Memory Data Request Frame Size
-	nResponseLength = 30 + (nSize*2); //Fins Read Memory Data Response Frame Size
+	
+	nCommandLength = 34;  //고정값, Fins Read Memory Data Request Frame Size
+	nResponseLength = 30 + (nSize * 2); //Fins Read Memory Data Response Frame Size
 	// 헤더(30 byte) + 데이타(Word * 2) 
-
+	
 	//printf("\n [DEBUG] FinsMemRead() call - Req[%d]/Resp[%d] ", nCommandLength, nResponseLength);
 
 	uTempInt32		= 8 - (nCommandLength % 8);
@@ -307,11 +316,15 @@ UINT32 CFinsDevice::FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT32* 
 	memset(pszResponse, 0, (nResponseLength + uTempInt32_2));
 
 	//void* memcpy (void* dest, const void* source, size_t num)
-	memcpy(pszCommand, (char*) & m_read_req_packet, nCommandLength);
-
+	
+	memcpy(pszCommand, (char*)&m_read_req_packet, nCommandLength);
 	DebugPrint(_T("[DebugPrint][FinsDLL] send() %d [byte] call \n"), nCommandLength);
+		
 	nResult = send(m_socketPrimary, pszCommand, nCommandLength, 0);
+
 	DebugPrint(_T("[DebugPrint][FinsDLL] send() %d [byte] return \n"), nResult);
+	
+	
 
 	if (nResult == SOCKET_ERROR)
 		uResult = WSAGetLastError();
@@ -434,10 +447,11 @@ UINT32 CFinsDevice::FinsMemWrite(UINT uAddress, INT nSize, PVOID pValue, UINT32*
 	//
 
 	uResult = COFR_Ok;
+	
 	nCommandLength = 34 + (nSize * 2);  //Fins Write Memory Data Request Frame Size
 	nResponseLength = 30; //Fins Write Memory Data Response Frame Size, 고정값
-
-	printf("\n [DEBUG] FinsMemWrite() call - Req[%d]/Resp[%d] ", nCommandLength, nResponseLength);
+	
+	DebugPrint(_T("\n [DEBUG] FinsMemWrite() call - Req[%d]/Resp[%d] "), nCommandLength, nResponseLength);
 
 	uTempInt32 = 8 - (nCommandLength % 8);
 	uTempInt32_2 = 8 - (nResponseLength % 8);
@@ -448,10 +462,12 @@ UINT32 CFinsDevice::FinsMemWrite(UINT uAddress, INT nSize, PVOID pValue, UINT32*
 	memset(pszCommand, 0, (nCommandLength + uTempInt32));
 	memset(pszResponse, 0, (nResponseLength + uTempInt32_2));
 	
-	//void* memcpy (void* dest, const void* source, size_t num)
-	memcpy(pszCommand, (char*) &m_write_req_packet, nCommandLength);
 
+
+	//void* memcpy (void* dest, const void* source, size_t num)
+	memcpy(pszCommand, (char*)&m_write_req_packet, nCommandLength);
 	nResult = send(m_socketPrimary, pszCommand, nCommandLength, 0);
+	
 	if (nResult == SOCKET_ERROR)
 		uResult = WSAGetLastError();
 
@@ -524,6 +540,8 @@ UINT32 CFinsDevice::IsFinsConnected()
 		return COFR_NotConnected;
 }
 
+
+
 UINT32 CFinsDevice::Connect()
 {
 	SOCKADDR_IN sin;
@@ -540,8 +558,11 @@ UINT32 CFinsDevice::Connect()
 	bSuccess = FALSE;
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = htonl(m_uIPAddress);
-	sin.sin_port = htons(9600);
+	sin.sin_port = htons(m_uPortNumber);
 
+	
+
+	//TCP 기반이면
 	m_socketPrimary = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_socketPrimary == INVALID_SOCKET)
 	{
@@ -552,6 +573,7 @@ UINT32 CFinsDevice::Connect()
 	uSendTimeout = uReceiveTimeout = MAX_TIMEOUT;
 	nResult = setsockopt(m_socketPrimary, SOL_SOCKET, SO_SNDTIMEO, (const char*)&uSendTimeout, sizeof(UINT));
 	nResult = setsockopt(m_socketPrimary, SOL_SOCKET, SO_RCVTIMEO, (const char*)&uReceiveTimeout, sizeof(UINT));
+
 	nResult = connect(m_socketPrimary, (struct sockaddr*)&sin, sizeof(sin));
 	if (nResult == SOCKET_ERROR)
 	{
@@ -559,6 +581,8 @@ UINT32 CFinsDevice::Connect()
 		Disconnect();
 		return nResult;
 	}
+
+	
 
 	return COFR_Ok;
 }
@@ -768,15 +792,18 @@ UINT32 CFinsDevice::ReadVariableBinaryData(PCHAR pszResponse, INT nLength)
 	INT32 nResult, nIndex, nMaxRead;
 	BOOL bDone;
 	PCHAR tempRecv;
-
+	//
+	
 	uResult = COFR_Ok;
 	bDone = FALSE;
 	nIndex = 0;
-	nMaxRead = nLength < MAX_READ ? nLength : MAX_READ;
+	nMaxRead = nLength < MAX_READ ? nLength : MAX_READ;	
 	tempRecv = pszResponse;
+	
 	do
-	{
+	{		
 		nResult = recv(m_socketPrimary, tempRecv, nMaxRead, 0);
+		
 		if (nResult == SOCKET_ERROR)
 		{
 			uResult = WSAGetLastError();
@@ -888,4 +915,22 @@ UINT32 CFinsDevice::Unlock()
 		ReleaseMutex(m_hMutex);
 
 	return COFR_Ok;
+}
+
+
+//Hostlink Header 셋팅
+UINT32 CFinsDevice::SetFinsHeader(INT32 nBlockArea,
+	INT32 nDestNetworkAddr, INT32 nDestNodeNum, INT32 nDestUnitAddr,
+	INT32 nSourceNetworkAddr, INT32 nSourceNodeNum, INT32 nSourceUnitAddr) 
+
+{
+	return 0;
+}
+
+
+ UINT32 CFinsDevice::GetFinsHeader(PINT32 nBlockArea,
+	PINT32 nDestNetworkAddr, PINT32 nDestNodeNum, PINT32 nDestUnitAddr,
+	PINT32 nSourceNetworkAddr, PINT32 nSourceNodeNum, PINT32 nSourceUnitAddr)
+{
+	 return 0;
 }

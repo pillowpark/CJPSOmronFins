@@ -19,8 +19,12 @@ namespace OmronFinsViewerCS
         private DataManager mDataManager;
         //
         private Boolean m_bFinsDataTask = false;
+        private Boolean m_bManualDriveTask = false;
+        private CJogMoveData m_JogMoveCtrlCmd = null;
+        //
         private Task m_taskFinsData = null;
         private Task m_taskFinsConnect = null;
+        private Task m_taskManualDrive = null;
         //
         public delegate void OnFinsPlcConnectDelegate();
         public event OnFinsPlcConnectDelegate OnFinsPlcConnect;
@@ -32,37 +36,114 @@ namespace OmronFinsViewerCS
             string strSettings = string.Format(@"{0}\SystemSetup.ini", System.Environment.CurrentDirectory); //파일 경로
             FileInfo fileInfo = new FileInfo(strSettings);
 
+            //
+            Int32 nTempInt32;
+
             mDataManager = App.GetApp().GetDataManager();
+            m_JogMoveCtrlCmd = mDataManager.GetJogCmdData();
 
             if (fileInfo.Exists)
             {
                 iniFile.Load(strSettings);
                 String strSectionProgram = "OMRON_PLC";
                 mDataManager.m_strOmronPlcIP = iniFile[strSectionProgram]["FinsIP"].ToString();
-                mDataManager.m_strOmronFinsPort = iniFile[strSectionProgram]["FinsPort"].ToInt();
+                mDataManager.m_nOmronFinsPort = iniFile[strSectionProgram]["FinsPort"].ToInt();
+                //
+                nTempInt32 = iniFile[strSectionProgram]["FinsTCP1UDP2Sel"].ToInt();
+                if (nTempInt32 == 1)
+                {
+                    mDataManager.m_nOmronFinsTCPUDPSel = 1; //1: TCP, 2:UDP
+                }
+                else 
+                {
+                    mDataManager.m_nOmronFinsTCPUDPSel = 2; //1: TCP, 2:UDP
+                }
+                //
+                nTempInt32 = iniFile[strSectionProgram]["FinsArea"].ToInt();
+                if (nTempInt32 == 0)
+                {
+                    mDataManager.m_nOmronFinsAreaBlock = 0x82; //0x82 : DM영역
+                }
+                else
+                {
+                    mDataManager.m_nOmronFinsAreaBlock = nTempInt32;
+                }
+                //
+                mDataManager.m_nOmronFinsDNA = iniFile[strSectionProgram]["FinsDNA"].ToInt();
+                mDataManager.m_nOmronFinsDA1 = iniFile[strSectionProgram]["FinsDA1"].ToInt();
+                mDataManager.m_nOmronFinsDA2 = iniFile[strSectionProgram]["FinsDA2"].ToInt();
+                //
+                mDataManager.m_nOmronFinsSNA = iniFile[strSectionProgram]["FinsSNA"].ToInt();
+                mDataManager.m_nOmronFinsSA1 = iniFile[strSectionProgram]["FinsSA1"].ToInt();
+                mDataManager.m_nOmronFinsSA2 = iniFile[strSectionProgram]["FinsSA2"].ToInt();
                 //dataManager.m_strDatabaseIP = iniFile[strSectionProgram]["DatabaseIP"].ToString();
                 //pmacData._nMotorNo = iniFile[strSectionProgram]["MotorNo"].ToInt();
             }
             else
             {
                 mDataManager.m_strOmronPlcIP = "192.168.250.1";
-                mDataManager.m_strOmronFinsPort = 9601;
-                // dataManager.m_strDatabaseIP = "127.0.0.1";
-                //pmacData._nMotorNo = 1;
+                mDataManager.m_nOmronFinsPort = 9601;
+                mDataManager.m_nOmronFinsTCPUDPSel = 1; //1: TCP, 2:UDP
+                mDataManager.m_nOmronFinsAreaBlock = 0x82; //0x82 : DM영역
+                //
+                mDataManager.m_nOmronFinsDNA = 0;
+                mDataManager.m_nOmronFinsDA1 = 01;
+                mDataManager.m_nOmronFinsDA2 = 0;
+                //
+                mDataManager.m_nOmronFinsSNA = 0;
+                mDataManager.m_nOmronFinsSA1 = 0xEA;
+                mDataManager.m_nOmronFinsSA2 = 0  ;
+        
             }
 
             //for Debug
             Console.WriteLine("Fins IP = {0} / Fins Port = {1}",
-                mDataManager.m_strOmronPlcIP, mDataManager.m_strOmronFinsPort);
+                mDataManager.m_strOmronPlcIP, mDataManager.m_nOmronFinsPort);
+            Console.WriteLine("Fins Communication Type = {0} / {1}",
+               mDataManager.m_nOmronFinsTCPUDPSel, (mDataManager.m_nOmronFinsTCPUDPSel == 0 ? "FINS/TCP":"FINS/UDP"));
+            Console.WriteLine("Fins Memory Area Code = 0x{0:X2} / {1}",
+              mDataManager.m_nOmronFinsAreaBlock, (mDataManager.m_nOmronFinsAreaBlock == 0x82 ? "DM" : "Another"));
 
+            Console.WriteLine("Fins Header DNA={0}, DA1={1}, DA2={2}, SNA={3}, SA1={4}, SA2={5}",
+            mDataManager.m_nOmronFinsDNA,
+            mDataManager.m_nOmronFinsDA1,
+            mDataManager.m_nOmronFinsDA2,
+            //
+            mDataManager.m_nOmronFinsSNA,
+            mDataManager.m_nOmronFinsSA1,
+            mDataManager.m_nOmronFinsSA2);
 
             // PlcFinsData plcFinsData = new PlcFinsData();
+        }//end  public DeviceDataTask()
+
+        public void SatartManualDriveTask()
+        {
+            Console.WriteLine("DeviceDataTask::SatartManualDriveTask()");
+
+            m_taskManualDrive = new Task(new System.Action(taskManualDriveJog));
+            m_bManualDriveTask = true;
+            m_taskManualDrive.Start();
         }
 
+        public void StopManualDriveTask()
+        {
+            Console.WriteLine("DeviceDataTask::StopManualDriveTask()");
 
+            if (m_taskManualDrive != null)
+            {
+                m_bManualDriveTask = false;
+                m_taskManualDrive.Wait();
+            }
+
+            // 마무리로 모두 0으로 한번 전송한다.
+            Task _task = new Task(() => taskManualDriveJogTerminate());
+            _task.Start();
+        }
 
         public void SatartDeviceDataTask()
         {
+            Console.WriteLine("DeviceDataTask::SatartDeviceDataTask()");
+
             m_taskFinsData = new Task(new System.Action(taskFinsDataReadLoop));
             //	m_taskPmacConnect = new Task(new Action<Int32>(taskPmacConnectLoop), 10);
             //m_taskEthernetData = new Task(new Action(taskEthernetDataLoop));
@@ -77,6 +158,7 @@ namespace OmronFinsViewerCS
 
         public void StoptDeviceDataTask()
         {
+            Console.WriteLine("DeviceDataTask::StoptDeviceDataTask()");
             //m_bEthernetDataTask = false;
             //m_taskEthernetData.Wait();
 
@@ -89,6 +171,200 @@ namespace OmronFinsViewerCS
             Console.WriteLine("DeviceDataTask::OneShotWriteArea()");
             taskFinsDataWriteLoop();
         }
+
+        private void taskManualDriveJogTerminate()
+        {
+            Console.WriteLine("DeviceDataTask::taskManualDriveJogTerminate()");
+            UInt32 uTaskIndexCount;
+
+            UInt32 uResult;
+            UInt32 uAddress;
+            Int32 nSize;
+            Byte[] bBuffer4ReadArea;
+            UInt32 uLength;
+
+            FinsDevice _finsDevice = mDataManager.GetFinsDevice();
+            PlcFinsData _fincData = mDataManager.GetFinsData();
+
+            Int32 nIsConnected;
+            nIsConnected = 1;
+
+           
+            bBuffer4ReadArea = new Byte[(4 * 2)] ;
+            Array.Clear(bBuffer4ReadArea, 0, bBuffer4ReadArea.Length);
+
+
+            uint _byte_offset;
+            uint _count;
+            uint _size;
+            bool _unsigned;
+            byte[] _byteArray;
+            Int32 _set_value_s16 = 0;
+
+           
+            if (nIsConnected == 0)
+                return;
+
+
+            //D1010 Jog_X_val
+            //D1011 Jog_Y_val
+            //D1012 Jog_Speed_val
+            uAddress    = 1010; //D1510번지부터
+            nSize       = 3;    //3워드
+            uResult     = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+
+            Thread.Sleep(100);
+            //9   D0.08   AMR_Stop 정지 트리거
+            //10  D0.09   AMR_JOG_Mode 조그모드 트리거
+            //11  D0.10   AMR_Goto_Mode 목적지 이동모드 트리거
+            //12  D0.11   AVR_GotoPoint_Mode 좌표 이동모드 트리거
+
+            try
+            {               
+                _set_value_s16 = 0x0100; // D0.08   AMR_Stop 정지 트리거
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //
+                bBuffer4ReadArea[ 0] = _byteArray[0];
+                bBuffer4ReadArea[ 1] = _byteArray[1];
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+            uAddress = 0; //D000번지부터
+            nSize = 1;    //1워드
+            uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+        }
+
+        private void taskManualDriveJog()
+        {
+            Console.WriteLine("DeviceDataTask::taskManualDriveJog()");
+            UInt32 uTaskIndexCount;
+
+            UInt32 uResult;
+            UInt32 uAddress;
+            Int32 nSize;
+            Byte[] bBuffer4ReadArea;
+            UInt32 uLength;
+
+            FinsDevice _finsDevice = mDataManager.GetFinsDevice();
+            PlcFinsData _fincData = mDataManager.GetFinsData();
+
+            Int32 nIsConnected;
+            nIsConnected = 1;
+
+            uAddress    = 1010; //D1510번지부터
+            nSize       = 3;    //3워드
+            bBuffer4ReadArea = new Byte[(nSize * 2)];
+            uint _byte_offset;
+            uint _count;
+            uint _size;
+            bool _unsigned;
+            byte[] _byteArray;
+            Int32 _set_value_s16 = 0;
+
+            if (nIsConnected == 0)
+                return;
+            
+            //9   D0.08   AMR_Stop 정지 트리거
+            //10  D0.09   AMR_JOG_Mode 조그모드 트리거
+            //11  D0.10   AMR_Goto_Mode 목적지 이동모드 트리거
+            //12  D0.11   AVR_GotoPoint_Mode 좌표 이동모드 트리거
+
+            try
+            {
+                _set_value_s16 = 0x0200; // D0.09   AMR_JOG_Mode 조그모드 트리거
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //
+                bBuffer4ReadArea[0] = _byteArray[0];
+                bBuffer4ReadArea[1] = _byteArray[1];
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+            uAddress = 0; //D000번지부터
+            nSize = 1;    //1워드
+            uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+
+            Thread.Sleep(100);
+
+            while (m_bManualDriveTask)
+            {
+                Console.WriteLine("DeviceDataTask::taskManualDriveJog() :: while (m_bManualDriveTask)");
+
+                if (nIsConnected == 0)
+                    return;
+
+                //Console.WriteLine("DeviceDataTask::taskManualDriveJog() m_bManualDriveTask == ture");
+                _byte_offset = 0;
+                try
+                {
+
+                    //m_JogMoveCtrlCmd.JogModeEnable = false;
+
+                    //D1010 Jog_X_val   range: 0 ~2000
+                    //D1011 Jog_Y_val   range: 0 ~2000
+                    //D1012 Jog_Speed_val   range: 0 ~2000
+
+                    // Jog 방향 X , range: 0 ~ 2000
+                    _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionX;
+                    _byteArray = BitConverter.GetBytes(_set_value_s16);
+                    //
+                    bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                    bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                    _byte_offset = _byte_offset + 2;
+
+
+                    // Jog 방향 Y , range: 0 ~2000
+                    _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionY;
+                    _byteArray = BitConverter.GetBytes(_set_value_s16);
+                    //                    
+                    bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                    bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                    _byte_offset = _byte_offset + 2;
+
+                    //Jog Speed , range : 0 ~ 2000
+                    _set_value_s16 = m_JogMoveCtrlCmd.JogValueSpeed;
+                    _byteArray = BitConverter.GetBytes(_set_value_s16);
+
+                    //바이트 오더 고려해서 작업할것
+                    bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                    bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                    _byte_offset = _byte_offset + 2;
+
+                    //바이트 오더 고려해서 작업할것
+                    //bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                    //bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                    //bBuffer4ReadArea[_byte_offset + 2] = _byteArray[2];
+                    //bBuffer4ReadArea[_byte_offset + 3] = _byteArray[3];
+
+                }
+                catch (IndexOutOfRangeException ioex)
+                {
+                    Console.WriteLine(ioex.Message);
+                }
+                catch (Exception exc)
+                {
+                    Console.WriteLine(exc.Message);
+                }
+
+                uAddress = 1010; //D000번지부터
+                nSize = 3;    //1워드
+                uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+                Thread.Sleep(300);
+
+        }//end  while (m_bManualDriveTask)
+
+    }
 
         private void taskFinsDataWriteLoop()
         {

@@ -103,7 +103,7 @@ UINT32 CDeviceFactory::AddAnalogIODevice(UINT32 uIPAddress, PUINT32 puDeviceID)
 }
 */
 
-UINT32 CDeviceFactory::AddFinsDevice(UINT32 uDeviceType, UINT32 uIPAddress, PUINT32 puDeviceID)
+UINT32 CDeviceFactory::AddFinsDevice(UINT32 uDeviceType, UINT32 uIPAddress, UINT16 uPortNumber,PUINT32 puDeviceID)
 {
 	PCFinsDevice	pFinsDevice;
 
@@ -117,12 +117,22 @@ UINT32 CDeviceFactory::AddFinsDevice(UINT32 uDeviceType, UINT32 uIPAddress, PUIN
 	switch (uDeviceType)
 	{
 	case COFD_BASE_O_PLC:
-		pFinsDevice = new CFinsDevice(uIPAddress, *puDeviceID);
+		pFinsDevice = new CFinsDevice(uIPAddress, uPortNumber, *puDeviceID);
 		break;
 
 	case COFD_NJ_PLC:
 		//pFinsDevice = new CAnalogIODevice(uIPAddress, *puDeviceID);
-		pFinsDevice = new CFinsDevice(uIPAddress, *puDeviceID);
+		pFinsDevice = new CFinsDevice(uIPAddress, uPortNumber, *puDeviceID);
+		break;
+
+	case COFD_FINS_TCP:
+		//pFinsDevice = new CAnalogIODevice(uIPAddress, *puDeviceID);
+		pFinsDevice = new CFinsDevice(uIPAddress, uPortNumber, *puDeviceID);
+		break;
+
+	case COFD_FINS_UDP:
+		//pFinsDevice = new CAnalogIODevice(uIPAddress, *puDeviceID);
+		pFinsDevice = new CFinsUDPDevice(uIPAddress, uPortNumber, *puDeviceID);
 		break;
 
 	default:

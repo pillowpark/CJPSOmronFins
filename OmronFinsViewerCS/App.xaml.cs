@@ -36,6 +36,7 @@ namespace OmronFinsViewerCS
 
         private static App m_theApp = null;
         private MainWindow m_MainWindow = null;
+        private JoyStickWindow m_JoyStickWindow = null;
         private DataManager m_DataManager = null;
         private DeviceDataTask m_DeviceDataTask = null;
         private PlcFinsData m_PlcFinsData = null;
@@ -69,6 +70,10 @@ namespace OmronFinsViewerCS
         {
             m_DataManager = new DataManager();
             m_DeviceDataTask = new DeviceDataTask();
+
+            //
+            m_JoyStickWindow = new JoyStickWindow();
+            m_JoyStickWindow.Show();
         }
 
 
