@@ -16,6 +16,7 @@ using Microsoft.Office.Interop.Excel;
 using System.Reflection;
 using System.Windows;
 using System.Security.RightsManagement;
+using System.Data.SqlTypes;
 
 namespace OmronFinsViewerCS
 {
@@ -44,6 +45,7 @@ namespace OmronFinsViewerCS
             //int[] numbers = new int[5];
             public uint[] size;
             public uint[] value;
+            public string[] str_byte_value;
             //public bool[] unsign;
             private uint count;
             private reg_data[] preg_data;
@@ -55,6 +57,7 @@ namespace OmronFinsViewerCS
                 count = _count;
                 size = new uint[count];
                 value = new uint[count];
+                str_byte_value = new string[count];
                 //
                 preg_data = _reg_data;
               
@@ -66,12 +69,23 @@ namespace OmronFinsViewerCS
                 uint _diff_count = 0;
                 bool _unsigned;
                 uint _var_size;
+                bool _b_diff_str;
+                
 
                 for (int i = 0; i < count; ++i)
                 {
-                    if (this.value[i] != para.value[i])
+                    if (para.str_byte_value[i] == null)
+                    {
+                        _b_diff_str = false;
+                    }
+                    else
+                    {
+                        _b_diff_str = this.str_byte_value[i].Equals(para.str_byte_value[i]);
+                    }
+                    if ((this.value[i] != para.value[i]) || !_b_diff_str)
                     {
                         para.value[i] = this.value[i];
+                        para.str_byte_value[i] = this.str_byte_value[i];
                         _diff_count++;
                         //
                         _var_size = preg_data[i].size;
@@ -87,24 +101,33 @@ namespace OmronFinsViewerCS
                                     preg_data[i].curr_value = Convert.ToString(this.value[i]);
                                 }
                                 else
-                                {   
-                                    Int32 uint32_temp = (Int32)(this.value[i] );
+                                {
+                                    Int32 uint32_temp = (Int32)(this.value[i]);
                                     preg_data[i].curr_value = Convert.ToString(Convert.ToInt32(uint32_temp));
                                 }
-                            }
-                            else
+                            }//end if (_var_size == 4)
+                            else if (_var_size == 2)
                             {
                                 if (_unsigned)
                                 {
-                                    UInt16 uint16_temp = (UInt16)(this.value[i] );
+                                    UInt16 uint16_temp = (UInt16)(this.value[i]);
                                     preg_data[i].curr_value = Convert.ToString(Convert.ToUInt16(uint16_temp));
                                 }
                                 else
                                 {
-                                    Int16 int16_temp = (Int16)(this.value[i] );
+                                    Int16 int16_temp = (Int16)(this.value[i]);
                                     preg_data[i].curr_value = Convert.ToString(Convert.ToInt16(int16_temp));
                                 }
+                            }//end else if (_var_size == 2)
+                            else
+                            {
+                                //size가 2,4 바이트가 아닌 길이
+                                preg_data[i].curr_value = this.str_byte_value[i];
+
+
                             }
+                            // end //size가 2,4 바이트가 아닌 길이
+
                         }//end try
                         catch (OverflowException oex)
                         { 
@@ -132,11 +155,24 @@ namespace OmronFinsViewerCS
                 {
                     _size = this.preg_data[i].size;
                     //_unsigned = this.unsign[i];
-                    if(_size == 4)
+                    if (_size == 4)
+                    {
                         this.value[i] = BitConverter.ToUInt32(_raw, _offset);
-                    else
+                    }
+                    else if (_size == 2)
+                    {
                         this.value[i] = BitConverter.ToUInt16(_raw, _offset);
-
+                    }
+                    else
+                    {
+                        byte[] _strByte;
+                        _strByte = new byte[_size];
+                        Array.Copy(_raw, _offset, _strByte, 0, _size);
+                        // 바이트 배열을 String으로 변환 
+                        string str = Encoding.Default.GetString(_strByte);
+                        this.value[i] = 0;
+                        this.str_byte_value[i] = str;
+                    }
                     _offset += (int)_size;
                 }
             }//end public void Pasing(byte[] _raw)

@@ -59,30 +59,40 @@ namespace OmronFinsViewerCS
             _degree = args.Angle;
             _angle  = Math.PI * _degree / 180.0; //degree to radian
             //            
-             _y_axis = Math.Cos(_angle) * _radius;
-            _x_axis = Math.Sin(_angle)* _radius;
-            Console.WriteLine("VirtualJoyStick:: X = {0} , Y = {1}",(int) _x_axis, (int)_y_axis);
+             _y_axis = (Math.Cos(_angle) * _radius) *10 + 1000;
+            _x_axis = (Math.Sin(_angle)* _radius) *10 + 1000;
+           
 
             m_JogMoveCtrlCmd.JogValueDirectionY = (int)_y_axis;
             m_JogMoveCtrlCmd.JogValueDirectionX = (int)_x_axis;
+            //
+            Console.WriteLine("VirtualJoyStick::Moved X = {0} , Y = {1}", (int)m_JogMoveCtrlCmd.JogValueDirectionX, (int)m_JogMoveCtrlCmd.JogValueDirectionY);
         }
 
         private void VirtualJoystick_Released(object sender)
         {
             _release_count++;
+
+            m_JogMoveCtrlCmd.JogValueDirectionY = 1000;
+            m_JogMoveCtrlCmd.JogValueDirectionX = 1000;
+            //
             joystickInfoLabel_Release_Capture.Text = $"Joystick Release:{_release_count}, Capture:{_capture_count}";
 
-            m_JogMoveCtrlCmd.JogValueDirectionY = 0;
-            m_JogMoveCtrlCmd.JogValueDirectionX = 0;
+            Console.WriteLine("VirtualJoyStick::Released X = {0} , Y = {1}", 
+                (int)m_JogMoveCtrlCmd.JogValueDirectionX, (int)m_JogMoveCtrlCmd.JogValueDirectionY);
         }
 
         private void VirtualJoystick_Captured(object sender)
         {
             _capture_count++;
+            //
+            m_JogMoveCtrlCmd.JogValueDirectionY = 1000;
+            m_JogMoveCtrlCmd.JogValueDirectionX = 1000;
+            //
             joystickInfoLabel_Release_Capture.Text = $"Joystick Capture:{_capture_count}, Release:{_release_count}";
 
-            m_JogMoveCtrlCmd.JogValueDirectionY = 0;
-            m_JogMoveCtrlCmd.JogValueDirectionX = 0;
+            Console.WriteLine("VirtualJoyStick::Captured X = {0} , Y = {1}",
+                (int)m_JogMoveCtrlCmd.JogValueDirectionX, (int)m_JogMoveCtrlCmd.JogValueDirectionY);
         }
 
         private void x_CheckBox_JogEnable_CheckedChanged(object sender, RoutedEventArgs e)
@@ -96,8 +106,8 @@ namespace OmronFinsViewerCS
             if (_isChecked == false)
             {
                 m_JogMoveCtrlCmd.JogModeEnable = false;
-                m_JogMoveCtrlCmd.JogValueDirectionY = 0;
-                m_JogMoveCtrlCmd.JogValueDirectionX = 0;
+                m_JogMoveCtrlCmd.JogValueDirectionY = 1000; //디폴트 2.5V
+                m_JogMoveCtrlCmd.JogValueDirectionX = 1000;
                 m_JogMoveCtrlCmd.JogValueSpeed = 0;
 
                 mDeviceDataTask.StopManualDriveTask();
@@ -112,8 +122,8 @@ namespace OmronFinsViewerCS
                 m_JogMoveCtrlCmd.JogValueSpeed = (int)_dSpeedValue;
                 //
 
-                m_JogMoveCtrlCmd.JogValueDirectionY = 0;
-                m_JogMoveCtrlCmd.JogValueDirectionX = 0;
+                m_JogMoveCtrlCmd.JogValueDirectionY = 1000; //디폴트 2.5V
+                m_JogMoveCtrlCmd.JogValueDirectionX = 1000;
                 //
                 mDeviceDataTask.SatartManualDriveTask();
             }

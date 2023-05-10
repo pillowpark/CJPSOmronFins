@@ -206,12 +206,68 @@ namespace OmronFinsViewerCS
                 return;
 
 
-            //D1010 Jog_X_val
-            //D1011 Jog_Y_val
-            //D1012 Jog_Speed_val
-            uAddress    = 1010; //D1510번지부터
-            nSize       = 3;    //3워드
-            uResult     = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+            //D60 Jog_X_val         range: 0 ~2000(중앙 1000)
+            //D61 Jog_Y_val         range: 0 ~2000(중앙 1000)
+            //D62 Jog_Speed_val     range: 0 ~2000(기본값 0)
+
+            _byte_offset = 0;
+            try
+            {
+
+                //m_JogMoveCtrlCmd.JogModeEnable = false;
+
+                //D60 Jog_X_val   range: 0 ~2000(중앙 1000)
+                //D61 Jog_Y_val   range: 0 ~2000(중앙 1000)
+                //D62 Jog_Speed_val   range: 0 ~2000(기본값 0)
+
+                // Jog 방향 X , range: 0 ~ 2000
+                m_JogMoveCtrlCmd.JogValueDirectionX = 1000;
+                _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionX;
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //
+                bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                _byte_offset = _byte_offset + 2;
+
+
+                // Jog 방향 Y , range: 0 ~2000
+                m_JogMoveCtrlCmd.JogValueDirectionY = 1000; 
+                _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionY;
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //                    
+                bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                _byte_offset = _byte_offset + 2;
+
+                //Jog Speed , range : 0 ~ 2000
+                m_JogMoveCtrlCmd.JogValueSpeed = 0;
+                _set_value_s16 = m_JogMoveCtrlCmd.JogValueSpeed;
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+
+                //바이트 오더 고려해서 작업할것
+                bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                _byte_offset = _byte_offset + 2;
+
+                //바이트 오더 고려해서 작업할것
+                //bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                //bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                //bBuffer4ReadArea[_byte_offset + 2] = _byteArray[2];
+                //bBuffer4ReadArea[_byte_offset + 3] = _byteArray[3];
+
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+
+            uAddress = 60; //D60번지부터
+            nSize    = 3;    //3워드
+            uResult  = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
 
             Thread.Sleep(100);
             //9   D0.08   AMR_Stop 정지 트리거
@@ -257,7 +313,11 @@ namespace OmronFinsViewerCS
             Int32 nIsConnected;
             nIsConnected = 1;
 
-            uAddress    = 1010; //D1510번지부터
+            //D60 Jog_X_val         range: 0 ~2000(중앙 1000)
+            //D61 Jog_Y_val         range: 0 ~2000(중앙 1000)
+            //D62 Jog_Speed_val     range: 0 ~2000(기본값 0)
+
+            uAddress = 60; //D0060번지부터
             nSize       = 3;    //3워드
             bBuffer4ReadArea = new Byte[(nSize * 2)];
             uint _byte_offset;
@@ -311,9 +371,9 @@ namespace OmronFinsViewerCS
 
                     //m_JogMoveCtrlCmd.JogModeEnable = false;
 
-                    //D1010 Jog_X_val   range: 0 ~2000
-                    //D1011 Jog_Y_val   range: 0 ~2000
-                    //D1012 Jog_Speed_val   range: 0 ~2000
+                    //D60 Jog_X_val   range: 0 ~2000(중앙 1000)
+                    //D61 Jog_Y_val   range: 0 ~2000(중앙 1000)
+                    //D62 Jog_Speed_val   range: 0 ~2000(기본값 0)
 
                     // Jog 방향 X , range: 0 ~ 2000
                     _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionX;
@@ -357,7 +417,7 @@ namespace OmronFinsViewerCS
                     Console.WriteLine(exc.Message);
                 }
 
-                uAddress = 1010; //D000번지부터
+                uAddress = 60; //D60번지부터
                 nSize = 3;    //1워드
                 uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
                 Thread.Sleep(300);
@@ -413,6 +473,7 @@ namespace OmronFinsViewerCS
                 {
                     _unsigned = _reg_wrtie_data[i].unsign;
                     _size = _reg_wrtie_data[i].size;
+
                     if (_size == 2)
                     {
                         if (_unsigned)
@@ -427,7 +488,7 @@ namespace OmronFinsViewerCS
                                 _set_value_u16 = 0;
                             }
                             finally
-                            {                                
+                            {
                             }
                             _byteArray = BitConverter.GetBytes(_set_value_u16);
                         }
@@ -435,30 +496,30 @@ namespace OmronFinsViewerCS
                         {
                             _set_value_s16 = Convert.ToInt16(_reg_wrtie_data[i].set_value);
                             _byteArray = BitConverter.GetBytes(_set_value_s16);
-                        }     
-                                                
+                        }
 
                         //바이트 오더 고려해서 작업할것
-                        bBuffer4ReadArea[_byte_offset + 0] = _byteArray[ 0];
-                        bBuffer4ReadArea[_byte_offset + 1] = _byteArray[ 1];
+                        bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                        bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
 
-                    }
-                    else
+                    }//end if (_size == 2)
+                    else if (_size == 4)
                     {
                         if (_unsigned)
                         {
-                            UInt32 _set_value=0;
-                            try {
+                            UInt32 _set_value = 0;
+                            try
+                            {
                                 _set_value = Convert.ToUInt32(_reg_wrtie_data[i].set_value);
                             }
-                            catch(Exception ex) 
-                            { 
+                            catch (Exception ex)
+                            {
                                 Console.WriteLine(ex.Message);
                                 _set_value = 0;
                             }
                             finally
                             {
-                                
+
                             }
                             _byteArray = BitConverter.GetBytes(_set_value);
                         }
@@ -469,11 +530,40 @@ namespace OmronFinsViewerCS
                         }
 
                         //바이트 오더 고려해서 작업할것
-                        bBuffer4ReadArea[_byte_offset + 0] = _byteArray[ 0];
-                        bBuffer4ReadArea[_byte_offset + 1] = _byteArray[ 1];
-                        bBuffer4ReadArea[_byte_offset + 2] = _byteArray[ 2];
-                        bBuffer4ReadArea[_byte_offset + 3] = _byteArray[ 3];
-                    }
+                        bBuffer4ReadArea[_byte_offset + 0] = _byteArray[0];
+                        bBuffer4ReadArea[_byte_offset + 1] = _byteArray[1];
+                        bBuffer4ReadArea[_byte_offset + 2] = _byteArray[2];
+                        bBuffer4ReadArea[_byte_offset + 3] = _byteArray[3];
+                    }//end else if (_size == 4)
+                    else
+                    {
+                        //크기가 2,4 가 아닌 크기
+                        
+                        byte[] _full_size_byte = new byte[_size];
+                        Array.Clear(_full_size_byte, 0, (int)_size);
+
+                        UInt32 _set_value = 0;
+                        try
+                        {
+                            byte[] StrByte;
+                            StrByte = Encoding.UTF8.GetBytes(_reg_wrtie_data[i].set_value);
+                            // Array.Copy(byte[] source, int sourceIndex, byte[] destination, int destinationIndex, int length)
+                            Array.Copy(StrByte, 0, _full_size_byte, 0, StrByte.Length);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
+                            //StrByte = new byte[_size];
+                            //Array.Clear(StrByte, 0,(int) _size);
+                        }
+                        finally
+                        {
+
+                        }
+                        //_byteArray = BitConverter.GetBytes(_set_value);
+                        // Array.Copy(byte[] source, int sourceIndex, byte[] destination, int destinationIndex, int length)
+                        Array.Copy(_full_size_byte, 0, bBuffer4ReadArea, _byte_offset, _size);
+                    }    
 
                     _byte_offset = _byte_offset + _size;
 
