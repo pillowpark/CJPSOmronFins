@@ -45,7 +45,7 @@
                     FontSize="20"
                        DockPanel.Dock="Right" TextAlignment="Right" Width="50" ></TextBlock>
             <Slider Name="x_Slider_SpeedlValue" Orientation="Horizontal" VerticalAlignment="Center"  HorizontalAlignment="Center"
-                    Maximum="1000"  MinWidth="400" Value="0"/>
+                    Maximum="8000"  MinWidth="400" Value="0"/>
         </DockPanel>
         
         <WpfControlLibrary:OnScreenJoystick Name="onScreenJoystick" Grid.Row="4"/>

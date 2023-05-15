@@ -40,6 +40,10 @@ namespace OmronFinsViewerCS
         private DataManager m_DataManager = null;
         private DeviceDataTask m_DeviceDataTask = null;
         private PlcFinsData m_PlcFinsData = null;
+        //
+        private AutoDriveWindow m_AutoDriveWindow = null;
+        //
+
 
         public static App GetApp()
         {
@@ -74,6 +78,9 @@ namespace OmronFinsViewerCS
             //
             m_JoyStickWindow = new JoyStickWindow();
             m_JoyStickWindow.Show();
+            //
+            m_AutoDriveWindow = new AutoDriveWindow();
+            m_AutoDriveWindow.Show();
         }
 
 

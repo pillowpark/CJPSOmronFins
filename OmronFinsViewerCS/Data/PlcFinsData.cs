@@ -67,7 +67,7 @@ namespace OmronFinsViewerCS
             public uint Copy_If_Diff(LData para)
             {
                 uint _diff_count = 0;
-                bool _unsigned;
+                bool? _unsigned;
                 uint _var_size;
                 bool _b_diff_str;
                 
@@ -96,11 +96,11 @@ namespace OmronFinsViewerCS
 
                             if (_var_size == 4)
                             {
-                                if (_unsigned)
+                                if (_unsigned == true)
                                 {
                                     preg_data[i].curr_value = Convert.ToString(this.value[i]);
                                 }
-                                else
+                                else //if (_unsigned == false)
                                 {
                                     Int32 uint32_temp = (Int32)(this.value[i]);
                                     preg_data[i].curr_value = Convert.ToString(Convert.ToInt32(uint32_temp));
@@ -108,7 +108,7 @@ namespace OmronFinsViewerCS
                             }//end if (_var_size == 4)
                             else if (_var_size == 2)
                             {
-                                if (_unsigned)
+                                if (_unsigned == true)
                                 {
                                     UInt16 uint16_temp = (UInt16)(this.value[i]);
                                     preg_data[i].curr_value = Convert.ToString(Convert.ToUInt16(uint16_temp));
@@ -187,7 +187,7 @@ namespace OmronFinsViewerCS
             public string set_value { get; set; }
             public string curr_value { get; set; }
             public string description { get; set; }       
-            public bool unsign { get; set; }  //unsigned int = true, signed int= false;
+            public bool? unsign { get; set; }  //unsigned int = true, signed int= false;
 
                 
             public reg_data()
@@ -575,9 +575,14 @@ namespace OmronFinsViewerCS
                                         {
                                             m_read_data[_idx].unsign = false;
                                         }
-                                        else
+                                        else if (string.Equals(str, "unsigned"))
                                         {
                                             m_read_data[_idx].unsign = true;
+                                        }
+                                        else 
+                                        {
+                                            //string 이나 빈칸
+                                            m_read_data[_idx].unsign = null;
                                         }
 
                                     }//end else(obj_data_sign == null)
@@ -631,7 +636,11 @@ namespace OmronFinsViewerCS
                                         string str = obj_data_desc.ToString();
                                         m_write_data[_idx].description = str;
                                     }
-                                    if (obj_data_sign == null){ }
+                                    if (obj_data_sign == null)
+                                    {
+                                        //string 이나 빈칸
+                                        m_write_data[_idx].unsign = null;
+                                    }
                                     else
                                     {
                                         string str = obj_data_sign.ToString();
@@ -639,14 +648,18 @@ namespace OmronFinsViewerCS
                                         {
                                             m_write_data[_idx].unsign = false;
                                         }
-                                        else
+                                        else if (string.Equals(str, "unsigned"))
                                         {
                                             m_write_data[_idx].unsign = true;
                                         }
-
+                                        else
+                                        {
+                                            //string 이나 빈칸
+                                            m_write_data[_idx].unsign = null;
+                                        }
                                     }//end else(obj_data_sign == null)
-                                    //
-                                    m_add_index_no_write++;
+                                         //
+                                        m_add_index_no_write++;
                                     if (m_add_index_no_write >= WriteVariableCount)
                                     {
                                         //엑셀파일에 의도치 않게 쓰레기값을 입력해 놓을 경우를 대비해서 

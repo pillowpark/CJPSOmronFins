@@ -33,11 +33,13 @@ namespace OmronFinsViewerCS.Device
         private UInt32 _uDeviceID;
         Ping _Ping = new Ping();
 
+        private bool m_IsConected;
+
         public UInt32 Open(UInt32 dwIPAddress, UInt32 uPortNum)
         {
             UInt32 uRetVal = 0;
             UInt32 uDeviceType = (UInt32)CJPSOF_DEVICE_TYPE.COFD_FINS_UDP;
-
+            m_IsConected = false;
 
 
             uRetVal = OEKFins.CJPSOFinsOpen(uDeviceType, dwIPAddress, uPortNum, out _uDeviceID);
@@ -54,6 +56,8 @@ namespace OmronFinsViewerCS.Device
             // UInt32 uDeviceType  = 0;
 
             UInt32 dwDeviceType = uDeviceType;// (UInt32)CJPSOF_DEVICE_TYPE.COFD_FINS_UDP;
+
+            m_IsConected = false;
 
             if (strField.Length != 4)
                 return Convert.ToUInt32(CJPSOF_RESULT.COFR_Failed);
@@ -72,6 +76,8 @@ namespace OmronFinsViewerCS.Device
         {
             UInt32 uRetVal = 0;
             //
+            m_IsConected = false;
+            //
             uRetVal = OEKFins.CJPSOFinsClose(_uDeviceID);
             Console.WriteLine("[DEBUG][APP] {0} = OFinsClose( ID =  {1} ) return ", uRetVal, _uDeviceID);
 
@@ -84,7 +90,8 @@ namespace OmronFinsViewerCS.Device
             UInt32 uReturn;
             uReturn = OEKFins.CJPSOFinsConnect(_uDeviceID);
             Console.WriteLine("[DEBUG][APP] {0} = OFinsConnect( ID =  {1} ) return \n", uReturn, _uDeviceID);
-
+            //
+            m_IsConected = true;
             //if (uReturn == (UInt32)DTK_STATUS.DS_Ok) SetEchoMode(7);
             //_bIsConnected = uReturn == (UInt32)DTK_STATUS.DS_Ok ? true : false;
 
@@ -98,9 +105,15 @@ namespace OmronFinsViewerCS.Device
             uReturn = OEKFins.CJPSOFinsDisconnect(_uDeviceID);
             Console.WriteLine("[DEBUG][APP] {0} = OFinsDisconnect( ID = {1} ) return \n", uReturn, _uDeviceID);
 
+            m_IsConected = false;
+            //
             return uReturn;
         }
 
+        public bool IsConected() 
+        {
+            return m_IsConected;
+        }
         public UInt32 GetFinsMem(UInt32 uAddress, Int32 nSize, Byte[] pValue, out UInt32 pLength)
         {
             uint uRetVal = 0;

@@ -192,21 +192,21 @@ UINT32 CFinsUDPDevice::GetNodeAddress(PINT32 pnErrorCode)
 	//PLC Node번호 = PLC IP 번호 끝자리
 	//PC 노트 번호 = PC IP 끝자리
 
-	inAddr = GetLastDigitOfHostIP();
-	iMyPCLastDigit = (inAddr.S_un.S_addr & 0x000000FF);
-	iPLCLastDigit  = (m_uIPAddress & 0x000000FF);
-	//본인의 PC IP는 169.254.x.x 대역의 IP를 제외하고 2번째 검색되는 IP의 끝자리를 사용
-	//그것밖에 안나오면 169.254.x.x 대역 사용
+	//inAddr = GetLastDigitOfHostIP();
+	//iMyPCLastDigit = (inAddr.S_un.S_addr & 0x000000FF);
+	//iPLCLastDigit  = (m_uIPAddress & 0x000000FF);
+	////본인의 PC IP는 169.254.x.x 대역의 IP를 제외하고 2번째 검색되는 IP의 끝자리를 사용
+	////그것밖에 안나오면 169.254.x.x 대역 사용
 
-	m_fins_header.da1 = (iPLCLastDigit  & 0x00FF); //Server Address
-	m_fins_header.sa1 = (iMyPCLastDigit & 0x00FF); //Client Address
+	//m_fins_header.da1 = (iPLCLastDigit  & 0x00FF); //Server Address
+	//m_fins_header.sa1 = (iMyPCLastDigit & 0x00FF); //Client Address
 
-	//			
-	m_read_req_datagram.plc_node_no = m_fins_header.da1;
-	m_read_req_datagram.pc_node_no = m_fins_header.sa1;
-	//
-	m_write_req_datagram.plc_node_no = m_fins_header.da1;
-	m_write_req_datagram.pc_node_no = m_fins_header.sa1;
+	////			
+	//m_read_req_datagram.plc_node_no = m_fins_header.da1;
+	//m_read_req_datagram.pc_node_no = m_fins_header.sa1;
+	////
+	//m_write_req_datagram.plc_node_no = m_fins_header.da1;
+	//m_write_req_datagram.pc_node_no = m_fins_header.sa1;
 	//
 
 	Unlock();
@@ -589,6 +589,23 @@ UINT32 CFinsUDPDevice::Connect()
 	}
 
 
+	//2023.05.12 추가 시작
+	// RECEIVE & SEND TIMEOUT 설정법
+	// hSocket이 블럭킹상태(Blocking) 일경우 해당된다. 논 블럭킹 상태(None-Blocking) 이면 recv에서 SOCKET_ERROR를 반환하고
+	//WSAGetLastError()로 확인 하면 WSAEWOULDBLOCK를 반환 한다. 
+	//WSAEWOULDBLOCK이 에러가 아니고, 다른 에러 이면 에러 코드를 참조 하여 에러 처리를 한다. 
+	// Receive Time Out Value : 3000 (약 3초)
+	int nTimeOutValue = 3000;
+	int nErrorCode;
+	nErrorCode = setsockopt(m_socketPrimary, SOL_SOCKET, SO_RCVTIMEO, (const char*)&nTimeOutValue, sizeof(nTimeOutValue));
+	if (SOCKET_ERROR == nErrorCode) { // 에러 처리
+
+	}
+	nErrorCode = setsockopt(m_socketPrimary, SOL_SOCKET, SO_SNDTIMEO, (const char*)&nTimeOutValue, sizeof(nTimeOutValue));
+	if (SOCKET_ERROR == nErrorCode) { // 에러 처리
+	}
+	// 2023.05.12 추가 여기까지
+
 	return COFR_Ok;
 }
 
@@ -688,12 +705,14 @@ UINT32 CFinsUDPDevice::ReadVariableBinaryData(PCHAR pszResponse, INT nLength)
 		}
 		else if (nResult == 0)
 		{
+			bDone = TRUE; //2023.05.12
+			uResult = COFR_Failed;
 			// 수신된 패킷에 데이터가 없는경우(비어 있음)
 			if (nIndex >= 14)
 			{
 				//최소 패킷 크기(FINS헤더(12) + Response Code(2))
 				//만큼 받으면 종료
-				bDone = TRUE;
+				//bDone = TRUE;
 			}			
 		}
 

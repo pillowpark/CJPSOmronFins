@@ -6,9 +6,16 @@ using System.Threading.Tasks;
 
 namespace OmronFinsViewerCS
 {
+
+    static class Constants
+    {
+        public const int _JOYSTIC_XY_DAC_CENTER_VALUE = 4000;
+    }
+
+    
     public class CJogMoveData
     {
-
+       
         public int JogValueDirectionX { get; set; }
         public int JogValueDirectionY { get; set; }
         public int JogValueSpeed { get; set; }

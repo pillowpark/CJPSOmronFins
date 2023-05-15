@@ -118,7 +118,7 @@ namespace OmronFinsViewerCS
         void OnDataGridCellLostFocus(object sender, RoutedEventArgs e)
         {
             int _lostIndex = 0;
-            bool _unsign;
+            bool? _unsign;
             PlcFinsData _plcFinsData = App.GetApp().GetDataManager().GetFinsData();
             reg_data[] _reg_wrtie_data = _plcFinsData.GetWriteData();
 
@@ -127,10 +127,12 @@ namespace OmronFinsViewerCS
 
             _unsign = _reg_wrtie_data[_lostIndex].unsign;
 
-            if (_unsign)
+            string _value_string = m_WriteDataCollection[_lostIndex].write_value;
+            if (_unsign == true)
             {
-                Regex regex = new Regex(@"[^ -]\d");
-                string _value_string = m_WriteDataCollection[_lostIndex].write_value;
+                //Regex regex = new Regex(@"[^ -]\d");
+                Regex regex = new Regex(@"^[0-9]+$");
+
                 Boolean ismatch = regex.IsMatch(_value_string);
                 if (!ismatch)
                 {
@@ -142,10 +144,10 @@ namespace OmronFinsViewerCS
                     _reg_wrtie_data[_lostIndex].set_value = _value_string;
                 }
             }
-            else
+            else if (_unsign == false)
             {
                 Regex regex = new Regex(@"[-0-9]");
-                string _value_string = m_WriteDataCollection[_lostIndex].write_value;
+                //string _value_string = m_WriteDataCollection[_lostIndex].write_value;
                 Boolean ismatch = regex.IsMatch(_value_string);
                 if (!ismatch)
                 {
@@ -157,6 +159,11 @@ namespace OmronFinsViewerCS
                     _reg_wrtie_data[_lostIndex].set_value = _value_string;
                 }
 
+            }
+            else
+            {
+                //null
+                _reg_wrtie_data[_lostIndex].set_value = _value_string;
             }
         }
         void OnSetValueCellEditEnding(object sender, DataGridCellEditEndingEventArgs e)

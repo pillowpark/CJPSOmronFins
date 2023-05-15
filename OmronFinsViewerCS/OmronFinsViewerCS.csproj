@@ -85,6 +85,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="AutoDriveWindow.xaml.cs">
+      <DependentUpon>AutoDriveWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Data\CJogMoveData.cs" />
     <Compile Include="Data\DataManager.cs" />
     <Compile Include="Data\Ini.cs" />
@@ -107,6 +110,10 @@
     <Compile Include="WritePage.xaml.cs">
       <DependentUpon>WritePage.xaml</DependentUpon>
     </Compile>
+    <Page Include="AutoDriveWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="JoyStickWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

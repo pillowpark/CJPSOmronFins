@@ -2,9 +2,11 @@
 using OmronFinsViewerCS.Device;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.RightsManagement;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -125,6 +127,32 @@ namespace OmronFinsViewerCS
             m_taskManualDrive.Start();
         }
 
+
+
+        public void AutoDriveGoalTargetDriveTask(int _goal)
+        {
+            Console.WriteLine("DeviceDataTask::StopManualDriveTask()");
+
+           
+
+            // 마무리로 모두 0으로 한번 전송한다.
+            Task _task = new Task(() => taskAutoDriveGoalTarget(_goal));
+            _task.Start();
+        }
+
+        public void StopTriggerTask()
+        {
+            Console.WriteLine("DeviceDataTask::StopManualDriveTask()");
+
+           
+
+            // 마무리로 모두 0으로 한번 전송한다.
+            Task _task = new Task(() => taskStop_Trigger());
+            _task.Start();
+        }
+
+
+
         public void StopManualDriveTask()
         {
             Console.WriteLine("DeviceDataTask::StopManualDriveTask()");
@@ -186,9 +214,8 @@ namespace OmronFinsViewerCS
             FinsDevice _finsDevice = mDataManager.GetFinsDevice();
             PlcFinsData _fincData = mDataManager.GetFinsData();
 
-            Int32 nIsConnected;
-            nIsConnected = 1;
-
+            bool nIsConnected;
+           
            
             bBuffer4ReadArea = new Byte[(4 * 2)] ;
             Array.Clear(bBuffer4ReadArea, 0, bBuffer4ReadArea.Length);
@@ -201,9 +228,14 @@ namespace OmronFinsViewerCS
             byte[] _byteArray;
             Int32 _set_value_s16 = 0;
 
-           
-            if (nIsConnected == 0)
+
+            nIsConnected = _finsDevice.IsConected();
+
+            if (nIsConnected == false)
                 return;
+
+
+          
 
 
             //D60 Jog_X_val         range: 0 ~2000(중앙 1000)
@@ -221,7 +253,7 @@ namespace OmronFinsViewerCS
                 //D62 Jog_Speed_val   range: 0 ~2000(기본값 0)
 
                 // Jog 방향 X , range: 0 ~ 2000
-                m_JogMoveCtrlCmd.JogValueDirectionX = 1000;
+                m_JogMoveCtrlCmd.JogValueDirectionX = Constants._JOYSTIC_XY_DAC_CENTER_VALUE; ;
                 _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionX;
                 _byteArray = BitConverter.GetBytes(_set_value_s16);
                 //
@@ -231,7 +263,7 @@ namespace OmronFinsViewerCS
 
 
                 // Jog 방향 Y , range: 0 ~2000
-                m_JogMoveCtrlCmd.JogValueDirectionY = 1000; 
+                m_JogMoveCtrlCmd.JogValueDirectionY = Constants._JOYSTIC_XY_DAC_CENTER_VALUE; ; 
                 _set_value_s16 = m_JogMoveCtrlCmd.JogValueDirectionY;
                 _byteArray = BitConverter.GetBytes(_set_value_s16);
                 //                    
@@ -240,7 +272,7 @@ namespace OmronFinsViewerCS
                 _byte_offset = _byte_offset + 2;
 
                 //Jog Speed , range : 0 ~ 2000
-                m_JogMoveCtrlCmd.JogValueSpeed = 0;
+                //m_JogMoveCtrlCmd.JogValueSpeed = 0;
                 _set_value_s16 = m_JogMoveCtrlCmd.JogValueSpeed;
                 _byteArray = BitConverter.GetBytes(_set_value_s16);
 
@@ -269,19 +301,23 @@ namespace OmronFinsViewerCS
             nSize    = 3;    //3워드
             uResult  = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
 
-            Thread.Sleep(100);
+
+            //D0.01   AMR_Connect AMR 접속 트리거
+            //
             //9   D0.08   AMR_Stop 정지 트리거
             //10  D0.09   AMR_JOG_Mode 조그모드 트리거
             //11  D0.10   AMR_Goto_Mode 목적지 이동모드 트리거
             //12  D0.11   AVR_GotoPoint_Mode 좌표 이동모드 트리거
 
+            Thread.Sleep(300);
+
             try
-            {               
-                _set_value_s16 = 0x0100; // D0.08   AMR_Stop 정지 트리거
+            {
+                _set_value_s16 = 0x0006; // D0.08   AMR_Stop 정지 트리거
                 _byteArray = BitConverter.GetBytes(_set_value_s16);
                 //
-                bBuffer4ReadArea[ 0] = _byteArray[0];
-                bBuffer4ReadArea[ 1] = _byteArray[1];
+                bBuffer4ReadArea[0] = _byteArray[0];
+                bBuffer4ReadArea[1] = _byteArray[1];
             }
             catch (IndexOutOfRangeException ioex)
             {
@@ -294,7 +330,252 @@ namespace OmronFinsViewerCS
             uAddress = 0; //D000번지부터
             nSize = 1;    //1워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
-        }
+
+        }//end private void taskManualDriveJogTerminate()
+
+
+        
+        private void taskAutoDriveGoalTarget(int _goal_number)
+        {
+            Console.WriteLine("DeviceDataTask::taskAudoDriveGoalTarget( {0} )", _goal_number);
+            UInt32 uTaskIndexCount;
+
+            UInt32 uResult;
+            UInt32 uAddress;
+            Int32 nSize;
+            Byte[] bBuffer4ReadArea;
+            UInt32 uLength;
+
+            FinsDevice _finsDevice = mDataManager.GetFinsDevice();
+            PlcFinsData _fincData = mDataManager.GetFinsData();
+
+            bool nIsConnected;
+           
+
+
+            bBuffer4ReadArea = new Byte[(24 * 2)];
+            Array.Clear(bBuffer4ReadArea, 0, bBuffer4ReadArea.Length);
+
+
+            
+
+            uint _byte_offset;
+            uint _count;
+            uint _size;
+            bool _unsigned;
+            byte[] _byteArray;
+            Int32 _set_value_s16 = 0;
+
+
+            nIsConnected = _finsDevice.IsConected();
+
+            if (nIsConnected == false)
+                return;
+
+           
+
+            try
+            {
+                //D0.01   AMR_Connect AMR 접속 트리거
+                //D0.02   AMR_Status AMR 상태 트리거(On : 500ms 마다 상태 갱신)
+                _set_value_s16 = 0x0006; // D0.08	AMR_Stop	정지 트리거
+
+
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //
+                bBuffer4ReadArea[0] = _byteArray[0];
+                bBuffer4ReadArea[1] = _byteArray[1];
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+            uAddress = 0; //D000번지부터
+            nSize = 1;    //1워드
+            uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+
+
+
+            Thread.Sleep(500);
+
+            _byte_offset = 0;
+            string str_GoalTargetString = "";
+            if (_goal_number == 1)
+            {
+                str_GoalTargetString = "a";
+            }
+            else if (_goal_number == 2)
+            {
+                str_GoalTargetString = "b";
+            }
+            else if (_goal_number == 3)
+            {
+                str_GoalTargetString = "a ";
+            }
+            else if (_goal_number == 4)
+            {
+                str_GoalTargetString = "b ";
+            }
+            else
+            {
+                str_GoalTargetString = "e";
+            }
+            try
+            {
+
+                _byteArray = Encoding.ASCII.GetBytes(str_GoalTargetString);
+
+                if (_goal_number == 1)
+                {
+                    //str_GoalTargetString = "a";
+                    bBuffer4ReadArea[0] = 0;
+                    nSize = 2;
+                }
+                else if (_goal_number == 2)
+                {
+                    //str_GoalTargetString = "b";
+                    bBuffer4ReadArea[0] = 0;
+                    nSize = 2;
+                }
+                else if (_goal_number == 3)
+                {
+                    // str_GoalTargetString = "a ";
+                    nSize = _byteArray.Length;
+                }
+                else if (_goal_number == 4)
+                {
+                    // str_GoalTargetString = "b ";
+                    nSize = _byteArray.Length;
+
+                }
+                else
+                {
+                    // str_GoalTargetString = "e";
+                    bBuffer4ReadArea[0] = 0;
+                    nSize = 2;
+                }
+
+                // Array.Copy(byte[] source, int sourceIndex, byte[] destination, int destinationIndex, int length)
+                Array.Copy(_byteArray, 0, bBuffer4ReadArea, 0, nSize);// _byteArray.Length);
+
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+
+            uAddress = 500; //D60번지부터
+            nSize = 25;    //25워드
+            uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+
+            Thread.Sleep(500);
+            //D0.01   AMR_Connect AMR 접속 트리거
+            //
+            //9   D0.08   AMR_Stop 정지 트리거
+            //10  D0.09   AMR_JOG_Mode 조그모드 트리거
+            //11  D0.10   AMR_Goto_Mode 목적지 이동모드 트리거
+            //12  D0.11   AVR_GotoPoint_Mode 좌표 이동모드 트리거
+
+            try
+            {
+                //D0.01   AMR_Connect AMR 접속 트리거
+                //D0.02   AMR_Status AMR 상태 트리거(On : 500ms 마다 상태 갱신)
+                _set_value_s16 = 0x0406; // D0.10	AMR_Goto_Mode	목적지 이동모드 트리거
+
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //
+                bBuffer4ReadArea[0] = _byteArray[0];
+                bBuffer4ReadArea[1] = _byteArray[1];
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+            uAddress = 0; //D000번지부터
+            nSize = 1;    //1워드
+            uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+
+
+        }//end private void taskAudoDriveGoalTarget(int _goal_number)
+
+
+
+        private void taskStop_Trigger()
+        {
+            Console.WriteLine("DeviceDataTask::taskStop_Trigger( )");
+            UInt32 uTaskIndexCount;
+
+            UInt32 uResult;
+            UInt32 uAddress;
+            Int32 nSize;
+            Byte[] bBuffer4ReadArea;
+            UInt32 uLength;
+
+            FinsDevice _finsDevice = mDataManager.GetFinsDevice();
+            PlcFinsData _fincData = mDataManager.GetFinsData();
+
+            bool nIsConnected;
+           
+
+
+            bBuffer4ReadArea = new Byte[(24 * 2)];
+            Array.Clear(bBuffer4ReadArea, 0, bBuffer4ReadArea.Length);
+
+
+
+
+            uint _byte_offset;
+            uint _count;
+            uint _size;
+            bool _unsigned;
+            byte[] _byteArray;
+            Int32 _set_value_s16 = 0;
+
+
+            nIsConnected = _finsDevice.IsConected();
+
+            if (nIsConnected == false)
+                return;
+
+            
+
+            try
+            {
+                //D0.01   AMR_Connect AMR 접속 트리거
+                //D0.02   AMR_Status AMR 상태 트리거(On : 500ms 마다 상태 갱신)
+                _set_value_s16 = 0x0006; // D0.08	AMR_Stop	정지 트리거
+
+
+                _byteArray = BitConverter.GetBytes(_set_value_s16);
+                //
+                bBuffer4ReadArea[0] = _byteArray[0];
+                bBuffer4ReadArea[1] = _byteArray[1];
+            }
+            catch (IndexOutOfRangeException ioex)
+            {
+                Console.WriteLine(ioex.Message);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+            uAddress = 0; //D000번지부터
+            nSize = 1;    //1워드
+            uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+
+        }//end private void taskStop_Trigger()
 
         private void taskManualDriveJog()
         {
@@ -310,8 +591,8 @@ namespace OmronFinsViewerCS
             FinsDevice _finsDevice = mDataManager.GetFinsDevice();
             PlcFinsData _fincData = mDataManager.GetFinsData();
 
-            Int32 nIsConnected;
-            nIsConnected = 1;
+            bool nIsConnected;
+           
 
             //D60 Jog_X_val         range: 0 ~2000(중앙 1000)
             //D61 Jog_Y_val         range: 0 ~2000(중앙 1000)
@@ -327,9 +608,15 @@ namespace OmronFinsViewerCS
             byte[] _byteArray;
             Int32 _set_value_s16 = 0;
 
-            if (nIsConnected == 0)
+            nIsConnected = _finsDevice.IsConected();
+
+            if (nIsConnected == false)
                 return;
-            
+
+          
+
+            //D0.01   AMR_Connect AMR 접속 트리거
+            //
             //9   D0.08   AMR_Stop 정지 트리거
             //10  D0.09   AMR_JOG_Mode 조그모드 트리거
             //11  D0.10   AMR_Goto_Mode 목적지 이동모드 트리거
@@ -337,7 +624,7 @@ namespace OmronFinsViewerCS
 
             try
             {
-                _set_value_s16 = 0x0200; // D0.09   AMR_JOG_Mode 조그모드 트리거
+                _set_value_s16 = 0x0206; // D0.09   AMR_JOG_Mode 조그모드 트리거
                 _byteArray = BitConverter.GetBytes(_set_value_s16);
                 //
                 bBuffer4ReadArea[0] = _byteArray[0];
@@ -361,8 +648,10 @@ namespace OmronFinsViewerCS
             {
                 Console.WriteLine("DeviceDataTask::taskManualDriveJog() :: while (m_bManualDriveTask)");
 
-                if (nIsConnected == 0)
-                    return;
+                nIsConnected = _finsDevice.IsConected();
+
+                if (nIsConnected == false)
+                    continue;
 
                 //Console.WriteLine("DeviceDataTask::taskManualDriveJog() m_bManualDriveTask == ture");
                 _byte_offset = 0;
@@ -436,16 +725,19 @@ namespace OmronFinsViewerCS
             Byte[] bBuffer4ReadArea;
             UInt32 uLength;
 
-            Int32 nIsConnected;
-            nIsConnected = 1;
+            bool nIsConnected;
+        
 
-            if (nIsConnected == 0)
-                return;
+           
 
             FinsDevice _finsDevice = mDataManager.GetFinsDevice();
             PlcFinsData _fincData = mDataManager.GetFinsData();
 
-           
+            nIsConnected = _finsDevice.IsConected();
+
+            if (nIsConnected == false)
+                return;
+
             reg_data[] _reg_wrtie_data = _fincData.GetWriteData();
             //pmacDevice.Open("192.168.0.200", (UInt32)DTK_MODE_TYPE.DM_GPASCII);
             //StartPmacConnectTask();
@@ -453,7 +745,7 @@ namespace OmronFinsViewerCS
             uint _byte_offset;
             uint _count;
             uint _size;
-            bool _unsigned;
+            bool? _unsigned;
 
             //
             uAddress = _fincData.WriteStartIndex;
@@ -476,7 +768,7 @@ namespace OmronFinsViewerCS
 
                     if (_size == 2)
                     {
-                        if (_unsigned)
+                        if (_unsigned == true)
                         {
                             try
                             {
@@ -505,7 +797,7 @@ namespace OmronFinsViewerCS
                     }//end if (_size == 2)
                     else if (_size == 4)
                     {
-                        if (_unsigned)
+                        if (_unsigned == true)
                         {
                             UInt32 _set_value = 0;
                             try
@@ -586,7 +878,7 @@ namespace OmronFinsViewerCS
         private void taskFinsDataReadLoop()
         {
             Int32 nIndex = 0;
-            Int32 nIsConnected;
+            bool  nIsConnected;
             UInt32 uResult;
             String strCommand;
             String[] astrResponse;
@@ -627,9 +919,9 @@ namespace OmronFinsViewerCS
                 Thread.Sleep(500);
                 //Task.Delay(5000);
                 //uResult = pmacDevice.IsConnected(out nIsConnected);
-                nIsConnected = 1;
+                nIsConnected = _finsDevice.IsConected();
 
-                if (nIsConnected == 0)
+                if (nIsConnected == false)
                     continue;
 
               
