@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Windows.Media.Media3D;
+using System.Windows.Documents;
 
 namespace OmronFinsViewerCS
 {
@@ -67,7 +68,7 @@ namespace OmronFinsViewerCS
 #if (_x64_)   // x64는 속성에서 조건부 컴파일 기호란에 추가
         const string dllName = "CJPSOmronFins.dll";   // 64Bit 플랫폼일 때 활성화
 #else
-    const string dllName = "PowerPmac32.dll";   // 32Bit 플랫폼일 때 활성화
+    const string dllName = "CJPSOmronFins.dll";   // 32Bit 플랫폼일 때 활성화
 #endif
 
 
@@ -132,6 +133,13 @@ namespace OmronFinsViewerCS
         public static extern UInt32 CJPSOFinsGetNodeInfo(UInt32 uDeviceID, out Int32 nBlockArea,
             out Int32 nDestNetworkAddr, out Int32 nDestNodeNum, out Int32 nDestUnitAddr,
             out Int32 nSourceNetworkAddr, out Int32 nSourceNodeNum, out Int32 nSourceUnitAddr);
+
+
+        // Single Character 형식으로 에러 번호와 문구를 리턴
+        [DllImport(dllName)]
+        public static extern UInt32 CJPSOFinsGetLastErrorA(UInt32 uDeviceID, Byte[] lpErrorString, Int32 nLength);
+
+
     }
 
 }

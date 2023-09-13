@@ -166,5 +166,20 @@ namespace OmronFinsViewerCS.Device
             
             return uRetVal;
         }
+
+
+       
+        public UInt32 GetLastFinsError(out String strErrorString, out UInt32 uErrorCode)
+        {
+             // public static extern UInt32 CJPSOFinsGetLastErrorA(UInt32 uDeviceID, Byte[] lpErrorString, Int32 nLength);
+            Byte[] chErrorString = new byte[256];
+            UInt32 uReturn;
+            Array.Clear(chErrorString, 0, chErrorString.Length);  
+            uReturn = OEKFins.CJPSOFinsGetLastErrorA(_uDeviceID, chErrorString, chErrorString.GetLength(0));
+            strErrorString = Encoding.UTF8.GetString(chErrorString);
+            uErrorCode = uReturn;
+
+            return uReturn;
+        }
     }
 }

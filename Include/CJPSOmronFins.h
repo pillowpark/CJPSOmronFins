@@ -48,6 +48,8 @@ extern "C" {
 	//메모리에 쓰기
 	UINT32 WINAPI CJPSOFinsMemWrite(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pWriteBuff, PINT32 pnLength);
 
+
+
 	//2023.05.09 Add
 	//Hostlink Header 셋팅
 	UINT32 WINAPI CJPSOFinsSetNodeInfo(UINT32 uDeviceID, INT32 nBlockArea, 
@@ -60,6 +62,10 @@ extern "C" {
 		PINT32 nDestNetworkAddr, PINT32 nDestNodeNum, PINT32 nDestUnitAddr,
 		PINT32 nSourceNetworkAddr, PINT32 nSourceNodeNum, PINT32 nSourceUnitAddr);
 	
+
+	//2023.05.15 Add
+	// Single Character 형식으로 제어
+	UINT32 WINAPI CJPSOFinsGetLastErrorA(UINT32 uDeviceID, LPSTR lpErrorString, INT32 nLength);
 
 #ifdef UNICODE
 //#define OSGetResponse			OSGetResponseW

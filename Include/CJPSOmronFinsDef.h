@@ -25,6 +25,7 @@ typedef enum _CJPSOF_RESULT
 	COFR_Connected = 11,
 	COFR_NotConnected = 12,
 	COFR_Failed = 21,
+	COFR_BindFailed = 22,
 	COFR_InvalidDevice = 31,
 	COFR_InvalidCommand = 32,
 	COFR_InvalidResponse = 33,

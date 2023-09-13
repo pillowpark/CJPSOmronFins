@@ -18,6 +18,7 @@
 
 CFinsUDPDevice::CFinsUDPDevice()
 {
+	m_FinsErrorCode = 0;
 	m_uIPAddress = 0;
 	m_uDeviceID = 0;
 	m_socketPrimary = NULL;
@@ -30,6 +31,7 @@ CFinsUDPDevice::CFinsUDPDevice()
 
 CFinsUDPDevice::CFinsUDPDevice(UINT32 uIPAddress, UINT16 uPortNumber, UINT32 uDeviceID)
 {
+	m_FinsErrorCode = 0;
 	m_uIPAddress = uIPAddress;
 	m_uDeviceID = uDeviceID;
 	m_uPortNumber = uPortNumber;
@@ -96,7 +98,7 @@ VOID CFinsUDPDevice::HostLinkHeaderSetting()
 	m_read_req_datagram.pc_node_no = m_fins_header.sa1;
 	m_read_req_datagram.pc_cpu_unit = m_fins_header.sa2;
 	//
-	m_read_req_datagram.sequence = 0x00;
+	m_read_req_datagram.sequence = 0x01;
 	m_read_req_datagram.fins_cmd_code[0] = 0x01;
 	m_read_req_datagram.fins_cmd_code[1] = 0x01;
 	m_read_req_datagram.data_area_type = 0x82;  //DM영역
@@ -122,7 +124,7 @@ VOID CFinsUDPDevice::HostLinkHeaderSetting()
 	m_write_req_datagram.pc_node_no = m_fins_header.sa1;
 	m_write_req_datagram.pc_cpu_unit = m_fins_header.sa2;
 	//
-	m_write_req_datagram.sequence = 0x00;			// Sequence(00~FF까지 자동 증가)
+	m_write_req_datagram.sequence = 0x01;			// Sequence(00~FF까지 자동 증가)
 	//
 	m_write_req_datagram.fins_cmd_code[0] = 0x01; // FINS Command code(Write = 0102)
 	m_write_req_datagram.fins_cmd_code[1] = 0x02; // FINS Command code(Write = 0102)
@@ -307,12 +309,14 @@ UINT32 CFinsUDPDevice::GetFinsResponseCode(PCHAR pszResponse, INT nLength)
 	UINT32 uOneByte[04] = { 0,0,0,0 };
 
 	//bit12 ~ 13 : Response Code - 0인지확인
-	uOneByte[00] = (pszResponse[12] << 0) & 0x000000FF;
-	uOneByte[01] = (pszResponse[13] << 8) & 0x0000FF00;
+	uOneByte[00] = (pszResponse[12] << 8) & 0x0000FF00;
+	uOneByte[01] = (pszResponse[13] << 0) & 0x000000FF;
 	
 
 	uResponseCode = (uOneByte[00] | uOneByte[01] | uOneByte[02] | uOneByte[03]);
-
+	//
+	m_FinsErrorCode = uResponseCode;
+	//
 	return uResponseCode;
 }
 
@@ -339,8 +343,11 @@ UINT32 CFinsUDPDevice::FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT3
 
 	//
 	// 테스트 해보고 바이트 오더 고려할것
-	uTempInt32 = m_read_req_datagram.sequence++;
-	m_read_req_datagram.sequence = (unsigned char)(uTempInt32 & 0x00FF);
+	uTempInt32 = (m_read_req_datagram.sequence + 1);
+	uTempInt32 = (uTempInt32 & 0x00FF);
+	m_read_req_datagram.sequence = (unsigned char)((uTempInt32 == 0 ? 1 : uTempInt32));
+
+
 	//
 	uTemp16.uint16_val = htons((unsigned short)nSize);;
 	m_read_req_datagram.read_data_length[1] = uTemp16.byte_val[1];
@@ -370,8 +377,10 @@ UINT32 CFinsUDPDevice::FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT3
 	
 	//UDP면 앞에 16바이트가 빠진다.
 	memcpy(pszCommand, (char*)(&m_read_req_datagram) , nCommandLength);
-	nResult = sendto(m_socketPrimary, pszCommand, nCommandLength, 0,
-		(SOCKADDR*)&m_plc_addr, sizeof(m_plc_addr));
+
+	//2023.09.07 변경
+	//nResult = sendto(m_socketPrimary, pszCommand, nCommandLength, 0, (SOCKADDR*)&m_plc_addr, sizeof(m_plc_addr));
+	nResult = sendto(m_socketPrimary, pszCommand, nCommandLength, 0, (SOCKADDR*)&m_plc_addr, sizeof(m_plc_addr));
 
 	
 	if (nResult == SOCKET_ERROR)
@@ -398,6 +407,7 @@ UINT32 CFinsUDPDevice::FinsMemRead(UINT uAddress, INT nSize, PVOID pValue, UINT3
 			{
 				//에러면 통신을 끊어야 될듯
 				*uFinsErrorCode = uErrorCode;
+				m_FinsErrorCode = uErrorCode;
 				uResult = COFR_PLCErrorOmronFINS;
 			}
 			else
@@ -457,9 +467,9 @@ UINT32 CFinsUDPDevice::FinsMemWrite(UINT uAddress, INT nSize, PVOID pValue, UINT
 	//memcpy(m_write_req_packet.bData, pValue, nSize);
 	//
 	// 테스트 해보고 바이트 오더 고려할것
-	uTempInt32 = m_write_req_datagram.sequence;
-	uTempInt32 = uTempInt32 + 1;
-	m_write_req_datagram.sequence = (unsigned char)(uTempInt32 & 0x00FF);
+	uTempInt32 = (m_write_req_datagram.sequence+1);
+	uTempInt32 = (uTempInt32 & 0x00FF) ;
+	m_write_req_datagram.sequence = (unsigned char)( (uTempInt32 == 0 ? 1: uTempInt32));
 	//
 	uTemp16.uint16_val = htons((unsigned short)(nSize));;
 	m_write_req_datagram.write_data_length[1] = uTemp16.byte_val[1];
@@ -565,12 +575,14 @@ UINT32 CFinsUDPDevice::Connect()
 	INT32 nResult;
 	BOOL bSuccess;
 	UINT32 uSendTimeout, uReceiveTimeout;
+
+	//struct sockaddr_in servaddr;// , cliaddr;
+
 	DebugPrint(_T("CFinsUDPDevice::Connect()\n"));
 	if (m_socketPrimary != NULL)
 		return COFR_Connected;
 
-	if (!DeviceDetect())
-		return COFR_Failed;
+	//if (!DeviceDetect()) return COFR_Failed;
 
 	bSuccess = FALSE;
 	sin.sin_family = AF_INET;
@@ -584,9 +596,28 @@ UINT32 CFinsUDPDevice::Connect()
 	m_socketPrimary = socket(AF_INET, SOCK_DGRAM, 0);
 	if (m_socketPrimary == INVALID_SOCKET)
 	{
+		//2023.09.07 Add New
+		DebugPrint(_T("CFinsUDPDevice::socket creation failed\n"));
 		m_socketPrimary = NULL;
 		return COFR_Failed;
 	}
+
+	//2023.09.07 Add New	
+	//memset(&servaddr, 0, sizeof(servaddr));
+	 // Filling server information
+	//servaddr.sin_family = AF_INET; // IPv4
+	//servaddr.sin_addr.s_addr = INADDR_ANY;
+	//servaddr.sin_port = htons(59610); //일단 하드코딩
+
+	// Bind the socket with the server address
+	//if (bind(m_socketPrimary, (const struct sockaddr*)&servaddr,
+	//	sizeof(servaddr)) < 0)
+	//{
+	//	DebugPrint(_T("CFinsUDPDevice::bind failed\n"));
+	//	//perror("bind failed");
+	//	//exit(EXIT_FAILURE);
+	//	return COFR_BindFailed;
+	//}
 
 
 	//2023.05.12 추가 시작
@@ -860,4 +891,31 @@ UINT32 CFinsUDPDevice::GetFinsHeader(PINT32 nBlockArea,
 
 
 	return uResult;
+}
+
+
+
+UINT32 CFinsUDPDevice::GetLastErrorA(LPSTR lpErrorStr, INT32 nLength)
+{
+	unsigned int uIndex=0;
+	unsigned int uTempErr;
+	
+	//unsigned int u
+	int nStrLength;
+	uTempErr = (m_FinsErrorCode & 0x7FFF); //bit15를 clear
+	int i = 0;
+	for (i = 0; i < OMRON_FINS_ERROR_COUNT; ++i)
+	{
+		if (u_fins_error_list[i] == uTempErr)
+		{
+			uIndex = i;
+			break;
+		}
+	}
+
+	nStrLength = strnlen_s(ch_fins_error_list[uIndex], OMRON_FINS_ERROR_MAX_STRING);
+	printf(" CFinsUDPDevice::GetLastErrorA:: Err = 0x%04x, Str[%d] = %s \n", uTempErr, nStrLength, ch_fins_error_list[uIndex]);
+	//ch_fins_error_list[uIndex]
+	strncpy_s(lpErrorStr, nLength, ch_fins_error_list[uIndex], nLength);
+	return uTempErr;
 }

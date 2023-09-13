@@ -49,7 +49,7 @@ void FinsLibStaticLoadTest()
     UINT32 uRetVal;
 
     //uIPAddress = 0x7F000001; //127.0.0.1
-    uRetVal =  CJPSOFinsOpen(uDeviceType, uIPAddress, uPortNum, &uDeviceID);
+    //uRetVal =  CJPSOFinsOpen(uDeviceType, uIPAddress, uPortNum, &uDeviceID);
 
     return;
 }
@@ -63,7 +63,8 @@ typedef UINT32(*FuncFinsConnect)(UINT32 uDeviceID);
 typedef UINT32(*FuncFinsDisconnect)(UINT32 uDeviceID);
 typedef UINT32(*FuncFinsMemRead)(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pReadBuff, PINT32 pnLength);
 typedef UINT32(*FuncFinsMemWrite)(UINT32 uDeviceID, UINT32 uStart, UINT32 uWordLength, PVOID pWriteBuff, PINT32 pnLength);
-
+//
+typedef UINT32(*FuncFinsGetLastErrorA)(UINT32 uDeviceID, LPSTR lpErrorString, INT32 nLength);
 
 // DLL 함수 포인터 선언
 
@@ -72,8 +73,8 @@ FuncFinsClose       OFinsClose = NULL;
 FuncFinsConnect     OFinsConnect = NULL;
 FuncFinsDisconnect  OFinsDisconnect = NULL;
 FuncFinsMemRead     OFinsMemRead = NULL;
-FuncFinsMemWrite    OFinsMemWrite = NULL;
-
+FuncFinsMemWrite        OFinsMemWrite = NULL;
+FuncFinsGetLastErrorA   OFinsGetLastErr = NULL;
 
 void FinsLibDynamicLoadTest()
 {
@@ -92,6 +93,8 @@ void FinsLibDynamicLoadTest()
         OFinsDisconnect = (FuncFinsDisconnect)  GetProcAddress(mhOmronFinsDll, "CJPSOFinsDisconnect");
         OFinsMemRead    = (FuncFinsMemRead)     GetProcAddress(mhOmronFinsDll, "CJPSOFinsMemRead");
         OFinsMemWrite   = (FuncFinsMemWrite)    GetProcAddress(mhOmronFinsDll, "CJPSOFinsMemWrite");
+        OFinsGetLastErr = (FuncFinsGetLastErrorA)GetProcAddress(mhOmronFinsDll, "CJPSOFinsGetLastErrorA");
+        
     }
     else
     {
@@ -114,6 +117,7 @@ void FinsLibDynamicLoadTest()
 
     UINT32  uInt32Buff[80];
 
+    char chStrArray[256];
 
     //2023.03.16 
     // DM 0 ~ 32768
@@ -122,9 +126,15 @@ void FinsLibDynamicLoadTest()
     //uIPAddress = 0xC0A800DD;//192.168.0.221
     //uIPAddress = 0xC0A8FA01;//192.168.250.1
     //uIPAddress = 0xC0A8FB01;//192.168.251.1
-    uIPAddress = 0x0a00000a;//192.168.251.1
+    //uIPAddress = 0x0a00000a;//192.168.251.1
 
-    uPortNum = 9600;
+    //210.179.38.182:19600
+    //uIPAddress = 0xd2b326b6;
+
+    //222.98.255.34:10000
+    uIPAddress = 0xde62ff22;
+
+    uPortNum = 10000;
     //OFinsOpen(UINT32 uDeviceType, UINT32 uIPAddress, UINT32 uPortNum);
     if (OFinsOpen != NULL)
     {
@@ -178,6 +188,11 @@ void FinsLibDynamicLoadTest()
             printf("[DEBUG][APP] OFinsMemWrite( ID = %d ) call \n", uDeviceID);
             uRetVall = OFinsMemWrite(uDeviceID, uStart, uWordLength, wWriteBuff, &nRetLength);
             printf("[DEBUG][APP] %d = OFinsMemWrite(start = %d, size =%d ) return \n", uRetVall, uStart, uWordLength);
+
+            if (uRetVall == COFR_PLCErrorOmronFINS)
+            {
+                uTemp32 = OFinsGetLastErr(uDeviceID, chStrArray, 128);
+            }
 
         }
 

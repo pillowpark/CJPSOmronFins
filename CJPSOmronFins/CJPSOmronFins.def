@@ -15,3 +15,4 @@ EXPORTS
 	CJPSOFinsMemRead			@1301
 	CJPSOFinsMemWrite			@1302
 
+	CJPSOFinsGetLastErrorA		@1401

@@ -129,6 +129,7 @@ namespace OmronFinsViewerCS
             {
                 mFinsDevice.Open(strIPAddr, uPortNum, (UInt32)CJPSOF_DEVICE_TYPE.COFD_FINS_UDP);
                 // mFinsDevice.Open("10.0.0.10", uPortNum);
+                
                 mFinsDevice.Connect();
                 mFinsDevice.SetFinsHeader(_hotlink_header, nFinsBlockArea);
             //OFinsOpen(UINT32 uDeviceType, UINT32 uIPAddress, UINT32 uPortNum);

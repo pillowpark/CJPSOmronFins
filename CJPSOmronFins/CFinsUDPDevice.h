@@ -176,6 +176,8 @@ public:
 		PINT32 nDestNetworkAddr, PINT32 nDestNodeNum, PINT32 nDestUnitAddr,
 		PINT32 nSourceNetworkAddr, PINT32 nSourceNodeNum, PINT32 nSourceUnitAddr);
 
+	virtual UINT32 GetLastErrorA(LPSTR lpErrorStr, INT32 nLength);
+
 protected:
 	/*BOOL DeviceDetect(UINT32 uIPAddress = 0);
 	
@@ -203,7 +205,7 @@ private:
 	//UINT32	m_uDeviceID;
 	//UINT32	m_uIPAddress;
 	//UINT16	m_uPortNumber;
-
+	UINT32 m_FinsErrorCode;
 	//
 	//for UDP
 	SOCKADDR m_plc_addr;

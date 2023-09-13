@@ -31,13 +31,15 @@ namespace OmronFinsViewerCS
         public delegate void OnFinsPlcConnectDelegate();
         public event OnFinsPlcConnectDelegate OnFinsPlcConnect;
 
+        private UInt32 uErrOccurCount;
         public DeviceDataTask()
         {
             IniFile iniFile = new IniFile();
             //String strSettings = "SystemSetup.ini";
             string strSettings = string.Format(@"{0}\SystemSetup.ini", System.Environment.CurrentDirectory); //파일 경로
             FileInfo fileInfo = new FileInfo(strSettings);
-
+            //
+            uErrOccurCount = 0;
             //
             Int32 nTempInt32;
 
@@ -300,7 +302,7 @@ namespace OmronFinsViewerCS
             uAddress = 60; //D60번지부터
             nSize    = 3;    //3워드
             uResult  = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
-
+            displayFinsErrorString(uResult);
 
             //D0.01   AMR_Connect AMR 접속 트리거
             //
@@ -330,6 +332,7 @@ namespace OmronFinsViewerCS
             uAddress = 0; //D000번지부터
             nSize = 1;    //1워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+            displayFinsErrorString(uResult);
 
         }//end private void taskManualDriveJogTerminate()
 
@@ -397,7 +400,7 @@ namespace OmronFinsViewerCS
             uAddress = 0; //D000번지부터
             nSize = 1;    //1워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
-
+            displayFinsErrorString(uResult);
 
 
             Thread.Sleep(500);
@@ -406,23 +409,23 @@ namespace OmronFinsViewerCS
             string str_GoalTargetString = "";
             if (_goal_number == 1)
             {
-                str_GoalTargetString = "a";
+                str_GoalTargetString = "a ";
             }
             else if (_goal_number == 2)
             {
-                str_GoalTargetString = "b";
+                str_GoalTargetString = "b ";
             }
             else if (_goal_number == 3)
             {
-                str_GoalTargetString = "a ";
+                str_GoalTargetString = "c ";
             }
             else if (_goal_number == 4)
             {
-                str_GoalTargetString = "b ";
+                str_GoalTargetString = "d ";
             }
             else
             {
-                str_GoalTargetString = "e";
+                str_GoalTargetString = "e ";
             }
             try
             {
@@ -432,14 +435,12 @@ namespace OmronFinsViewerCS
                 if (_goal_number == 1)
                 {
                     //str_GoalTargetString = "a";
-                    bBuffer4ReadArea[0] = 0;
-                    nSize = 2;
+                    nSize = _byteArray.Length;
                 }
                 else if (_goal_number == 2)
                 {
                     //str_GoalTargetString = "b";
-                    bBuffer4ReadArea[0] = 0;
-                    nSize = 2;
+                    nSize = _byteArray.Length;
                 }
                 else if (_goal_number == 3)
                 {
@@ -455,8 +456,7 @@ namespace OmronFinsViewerCS
                 else
                 {
                     // str_GoalTargetString = "e";
-                    bBuffer4ReadArea[0] = 0;
-                    nSize = 2;
+                    nSize = _byteArray.Length;
                 }
 
                 // Array.Copy(byte[] source, int sourceIndex, byte[] destination, int destinationIndex, int length)
@@ -475,7 +475,7 @@ namespace OmronFinsViewerCS
             uAddress = 500; //D60번지부터
             nSize = 25;    //25워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
-
+            displayFinsErrorString(uResult);
             Thread.Sleep(500);
             //D0.01   AMR_Connect AMR 접속 트리거
             //
@@ -506,6 +506,7 @@ namespace OmronFinsViewerCS
             uAddress = 0; //D000번지부터
             nSize = 1;    //1워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+            displayFinsErrorString(uResult);
 
 
         }//end private void taskAudoDriveGoalTarget(int _goal_number)
@@ -574,6 +575,7 @@ namespace OmronFinsViewerCS
             uAddress = 0; //D000번지부터
             nSize = 1;    //1워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+            displayFinsErrorString(uResult);
 
         }//end private void taskStop_Trigger()
 
@@ -641,6 +643,7 @@ namespace OmronFinsViewerCS
             uAddress = 0; //D000번지부터
             nSize = 1;    //1워드
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+            displayFinsErrorString(uResult);
 
             Thread.Sleep(100);
 
@@ -709,6 +712,7 @@ namespace OmronFinsViewerCS
                 uAddress = 60; //D60번지부터
                 nSize = 3;    //1워드
                 uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
+                displayFinsErrorString(uResult);
                 Thread.Sleep(300);
 
         }//end  while (m_bManualDriveTask)
@@ -870,8 +874,26 @@ namespace OmronFinsViewerCS
                 Console.WriteLine(exc.Message);
             }
             uResult = _finsDevice.SetFinsMem(uAddress, nSize, bBuffer4ReadArea, out uLength);
-           //Console.WriteLine("taskFinsDataWriteLoop()::  {2} = SetFinsMem:: Address = {0} / Size = {1}",
+            displayFinsErrorString(uResult);
+            //Console.WriteLine("taskFinsDataWriteLoop()::  {2} = SetFinsMem:: Address = {0} / Size = {1}",
             //  uAddress, nSize, uResult);
+        }
+
+        private void displayFinsErrorString(UInt32 uResult)
+        {
+            FinsDevice _finsDevice = mDataManager.GetFinsDevice();
+            String strErrorContext;
+            UInt32 uErrorCode;
+            UInt32 uResultVal;
+
+            if (uResult == (UInt32)CJPSOF_RESULT.COFR_PLCErrorOmronFINS)
+            {
+                ++uErrOccurCount;
+                //public UInt32 GetLastFinsError(out String strErrorString, out UInt32 uErrorCode)
+                uResultVal = _finsDevice.GetLastFinsError(out strErrorContext, out uErrorCode);
+                //System.Diagnostics.Debug.WriteLine("OMRON-PLC Error Response: 0x{0:X}, {1}", uErrorCode, strErrorContext);
+                Console.WriteLine("[{2}]OMRON-PLC Error Response: 0x{0:X}, {1}", uErrorCode, strErrorContext , uErrOccurCount);
+            }
         }
 
 
@@ -926,7 +948,8 @@ namespace OmronFinsViewerCS
 
               
                 uResult = _finsDevice.GetFinsMem(uAddress4ReadArea, nSize4ReadArea, bBuffer4ReadArea, out uLength);
-               // Console.WriteLine("taskFinsDataLoop()::[Read Area]  {2} = GetFinsMem:: Address = {0} / Size = {1}",
+                displayFinsErrorString(uResult);
+                // Console.WriteLine("taskFinsDataLoop()::[Read Area]  {2} = GetFinsMem:: Address = {0} / Size = {1}",
                 //  uAddress4ReadArea, nSize4ReadArea, uResult);
                 //uResult = pmacDevice.GetResponse(strCommand, out astrResponse);
 
@@ -937,11 +960,16 @@ namespace OmronFinsViewerCS
                     if (uResult > 1000 || uResult == (UInt32)CJPSOF_RESULT.COFR_TimeOut || uResult == (UInt32)CJPSOF_RESULT.COFR_Failed 
                         || uResult == (UInt32)CJPSOF_RESULT.COFR_DataRemains || uResult == (UInt32)CJPSOF_RESULT.COFR_NotConnected)
                     {
-                        System.Diagnostics.Debug.WriteLine("통신 에러 발생 : GetResponse ErrorCode={0}", uResult);
+                        System.Diagnostics.Debug.WriteLine("통신 에러 발생 : ErrorCode={0}", uResult);
                         _finsDevice.Disconnect();
                         App.GetApp().GetMainWindow().Dispatcher.BeginInvoke(new System.Action(OnFinsPlcConnect));
+
+                       
                         //StartPmacConnectTask();
                     }
+                    //
+                    displayFinsErrorString(uResult);
+                    //
                     continue;
                 }
 
@@ -957,8 +985,9 @@ namespace OmronFinsViewerCS
                
 
                 uResult = _finsDevice.GetFinsMem(uAddress4WriteArea, nSize4WriteArea, bBuffer4WriteArea, out uLength);
-               // Console.WriteLine("taskFinsDataLoop()::[Write Area]  {2} = GetFinsMem:: Address = {0} / Size = {1}",
-               //   uAddress4WriteArea, nSize4WriteArea, uResult);
+                displayFinsErrorString(uResult);
+                // Console.WriteLine("taskFinsDataLoop()::[Write Area]  {2} = GetFinsMem:: Address = {0} / Size = {1}",
+                //   uAddress4WriteArea, nSize4WriteArea, uResult);
 
 
                 // "Motor[5].HomePos Motor[5].ActPos Motor[5].ActVel Motor[5].DesPos"
@@ -971,7 +1000,10 @@ namespace OmronFinsViewerCS
                         _finsDevice.Disconnect();
                         App.GetApp().GetMainWindow().Dispatcher.BeginInvoke(new System.Action(OnFinsPlcConnect));
                         //StartPmacConnectTask();
+                        
                     }
+                    displayFinsErrorString(uResult);
+                    //
                     continue;
                 }
 

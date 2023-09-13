@@ -98,7 +98,7 @@ VOID CFinsDevice::HostLinkHeaderSetting()
 	m_read_req_packet.pc_node_no		= m_fins_header.sa1;
 	m_read_req_packet.pc_cpu_unit		= m_fins_header.sa2;
 	//
-	m_read_req_packet.sequence			= 0x00;
+	m_read_req_packet.sequence			= 0x03;
 	m_read_req_packet.fins_cmd_code[0]	= 0x01;
 	m_read_req_packet.fins_cmd_code[1]	= 0x01;
 	m_read_req_packet.data_area_type	= 0x82;  //DM영역
@@ -133,7 +133,7 @@ VOID CFinsDevice::HostLinkHeaderSetting()
 	m_write_req_packet.pc_node_no		= m_fins_header.sa1;
 	m_write_req_packet.pc_cpu_unit		= m_fins_header.sa2;
 	//
-	m_write_req_packet.sequence				= 0x00;			// Sequence(00~FF까지 자동 증가)
+	m_write_req_packet.sequence				= 0x03;			// Sequence(00~FF까지 자동 증가)
 	//
 	m_write_req_packet.fins_cmd_code[0]		= 0x01; // FINS Command code(Write = 0102)
 	m_write_req_packet.fins_cmd_code[1]		= 0x02; // FINS Command code(Write = 0102)
@@ -934,3 +934,9 @@ UINT32 CFinsDevice::SetFinsHeader(INT32 nBlockArea,
 {
 	 return 0;
 }
+
+
+ UINT32 CFinsDevice::GetLastErrorA(LPSTR lpErrorStr, INT32 nLength)
+ {
+	 return 0;
+ }

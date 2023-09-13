@@ -251,3 +251,24 @@ UINT32 WINAPI CJPSOFinsStatus(UINT32 uDeviceID)
 
 	return uResult;
 }
+
+
+
+//2023.05.15 Add
+	// Single Character 형식으로 제어
+UINT32 WINAPI CJPSOFinsGetLastErrorA(UINT32 uDeviceID, LPSTR lpErrorString, INT32 nLength)
+{
+	UINT32 uResult;
+	PCFinsDevice pFinsDevice;
+
+
+	pFinsDevice = g_DeviceFactory.GetFinsDevice(uDeviceID);
+	if (pFinsDevice)
+	{
+		uResult = pFinsDevice->GetLastErrorA(lpErrorString, nLength);
+	}
+	else
+		uResult = COFR_InvalidDevice;
+
+	return uResult;
+}
