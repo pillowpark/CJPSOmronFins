@@ -35,7 +35,8 @@ typedef enum _CJPSOF_RESULT
 	COFR_RunningDownload = 61,
 	//
 	COFR_NodeDataRequestFail = 101,
-	COFR_PLCErrorOmronFINS = 102
+	COFR_PLCErrorOmronFINS = 102,
+	COFR_FINS_IncorrectFrame = 103  //응답이 오긴 왔는데 시퀀스가 다르다거나, 응답페킷에 맞지 않다거나
 	
 
 } CSF_RESULT;
